@@ -67,7 +67,7 @@ export default function InfluencerProfilePage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          influencerId: params.id,
+          influencerId: influencer.userId,
           title: proposalModal.title,
           description: proposalModal.description,
           dealValue: parseFloat(proposalModal.dealValue),
