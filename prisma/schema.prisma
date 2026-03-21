@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      String   // "INFLUENCER" | "COMPANY"
+  createdAt DateTime @default(now())
+
+  influencerProfile InfluencerProfile?
+  companyProfile    CompanyProfile?
+  sentDeals         Deal[]            @relation("CompanyDeals")
+  receivedDeals     Deal[]            @relation("InfluencerDeals")
+}
+
+model InfluencerProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String
+  bio                 String
+  avatar              String?
+  niche               String   // e.g. "Fashion", "Tech", "Food", "Travel"
+  instagram           String?
+  youtube             String?
+  twitter             String?
+  tiktok              String?
+  linkedin            String?
+  instagramFollowers  Int?
+  youtubeFollowers    Int?
+  twitterFollowers    Int?
+  tiktokFollowers     Int?
+  ratePerPost         Float
+  currency            String   @default("INR")
+  location            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  industry    String
+  website     String?
+  description String
+  budget      String   // e.g. "10000-50000"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Deal {
+  id            String   @id @default(cuid())
+  companyId     String
+  influencerId  String
+  company       User     @relation("CompanyDeals", fields: [companyId], references: [id], onDelete: Cascade)
+  influencer    User     @relation("InfluencerDeals", fields: [influencerId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  dealValue     Float
+  commission    Float    // 10% of dealValue
+  status        String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | COMPLETED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
