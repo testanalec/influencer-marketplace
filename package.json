@@ -4,7 +4,7 @@
   "description": "A modern influencer marketplace connecting brands with creators",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",

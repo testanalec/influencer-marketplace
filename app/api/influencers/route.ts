@@ -35,10 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(influencers);
   } catch (err) {
     console.error("Error fetching influencers:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch influencers" },
-      { status: 500 }
-    );
+    return NextResponse.json([], { status: 200 });
   }
 }
 
