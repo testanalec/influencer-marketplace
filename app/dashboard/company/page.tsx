@@ -1,5 +1,4 @@
 "use client";
-
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -13,6 +12,8 @@ export default function CompanyDashboard() {
   const [searchNiche, setSearchNiche] = useState("");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("search");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -53,6 +54,31 @@ export default function CompanyDashboard() {
     }
   };
 
+  const syncYouTubeInfluencers = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const response = await fetch("/api/youtube/sync", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        setSyncMessage({ type: "error", text: data.error || "Sync failed" });
+      } else {
+        setSyncMessage({
+          type: "success",
+          text: data.message || `Synced ${data.totalSynced} YouTube influencers successfully!`,
+        });
+        // Refresh influencer list after sync
+        const res = await fetch("/api/influencers");
+        const updated = await res.json();
+        setInfluencers(updated);
+      }
+    } catch (err) {
+      setSyncMessage({ type: "error", text: "Failed to connect to sync service" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -68,18 +94,8 @@ export default function CompanyDashboard() {
     .reduce((sum, d) => sum + d.dealValue, 0);
 
   const niches = [
-    "Fashion",
-    "Beauty",
-    "Tech",
-    "Food",
-    "Travel",
-    "Fitness",
-    "Lifestyle",
-    "Entertainment",
-    "Education",
-    "Business",
-    "Sports",
-    "Gaming",
+    "Fashion", "Beauty", "Tech", "Food", "Travel", "Fitness",
+    "Lifestyle", "Entertainment", "Education", "Business", "Sports", "Gaming",
   ];
 
   return (
@@ -87,9 +103,7 @@ export default function CompanyDashboard() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Welcome, {session?.user.name}!
-          </h1>
+          <h1 className="text-3xl font-bold">Welcome, {session?.user.name}!</h1>
         </div>
 
         {/* Stats Cards */}
@@ -108,6 +122,45 @@ export default function CompanyDashboard() {
               ₹{totalSpent.toLocaleString()}
             </p>
           </div>
+        </div>
+
+        {/* YouTube Sync Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border-l-4 border-red-500">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <span className="text-red-600">▶</span> YouTube Influencer Sync
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                Auto-fetch and list YouTube influencers from Fashion, Beauty, Tech, Gaming, Fitness, Food &amp; Travel niches
+              </p>
+            </div>
+            <button
+              onClick={syncYouTubeInfluencers}
+              disabled={syncing}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {syncing ? (
+                <>
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  Syncing YouTube...
+                </>
+              ) : (
+                "🔄 Sync YouTube Influencers"
+              )}
+            </button>
+          </div>
+          {syncMessage && (
+            <div
+              className={`mt-4 px-4 py-3 rounded-lg text-sm font-medium ${
+                syncMessage.type === "success"
+                  ? "bg-green-100 text-green-800 border border-green-300"
+                  : "bg-red-100 text-red-800 border border-red-300"
+              }`}
+            >
+              {syncMessage.type === "success" ? "✅ " : "❌ "}{syncMessage.text}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -146,31 +199,22 @@ export default function CompanyDashboard() {
                       onChange={(e) => setSearchNiche(e.target.value)}
                       className="input-field flex-1"
                     >
-                      <option value="">Select a niche</option>
+                      <option value="">All Niches</option>
                       {niches.map((niche) => (
-                        <option key={niche} value={niche}>
-                          {niche}
-                        </option>
+                        <option key={niche} value={niche}>{niche}</option>
                       ))}
                     </select>
-                    <button type="submit" className="btn-primary px-8">
-                      Search
-                    </button>
+                    <button type="submit" className="btn-primary px-8">Search</button>
                   </div>
                 </form>
-
                 {influencers.length > 0 && (
                   <div>
                     <p className="text-gray-600 mb-4">
-                      Found {influencers.length} influencer
-                      {influencers.length !== 1 ? "s" : ""}
+                      Found {influencers.length} influencer{influencers.length !== 1 ? "s" : ""}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {influencers.map((influencer) => (
-                        <div
-                          key={influencer.id}
-                          className="card"
-                        >
+                        <div key={influencer.id} className="card">
                           {influencer.avatar && (
                             <img
                               src={influencer.avatar}
@@ -178,19 +222,20 @@ export default function CompanyDashboard() {
                               className="w-20 h-20 rounded-full mb-4 object-cover"
                             />
                           )}
-                          <h3 className="text-lg font-bold mb-2">
-                            {influencer.name}
-                          </h3>
-                          <p className="text-primary-600 text-sm mb-2">
-                            {influencer.niche}
-                          </p>
+                          <h3 className="text-lg font-bold mb-1">{influencer.name}</h3>
+                          <p className="text-primary-600 text-sm mb-1">{influencer.niche}</p>
+                          {influencer.location && (
+                            <p className="text-gray-500 text-xs mb-2">📍 {influencer.location}</p>
+                          )}
+                          {influencer.youtubeFollowers ? (
+                            <p className="text-red-600 text-sm font-semibold mb-2">
+                              ▶ {(influencer.youtubeFollowers / 1000).toFixed(0)}K YouTube subscribers
+                            </p>
+                          ) : null}
                           <p className="text-gray-600 text-sm mb-4">
                             ₹{influencer.ratePerPost.toLocaleString()} per post
                           </p>
-                          <a
-                            href={`/influencers/${influencer.id}`}
-                            className="inline-block btn-primary text-sm"
-                          >
+                          <a href={`/influencers/${influencer.id}`} className="inline-block btn-primary text-sm">
                             View Profile
                           </a>
                         </div>
@@ -203,9 +248,7 @@ export default function CompanyDashboard() {
               <div>
                 <h2 className="text-2xl font-bold mb-6">My Proposals</h2>
                 {deals.length === 0 ? (
-                  <p className="text-gray-600 text-center py-8">
-                    No proposals sent yet
-                  </p>
+                  <p className="text-gray-600 text-center py-8">No proposals sent yet</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -221,12 +264,8 @@ export default function CompanyDashboard() {
                       <tbody>
                         {deals.map((deal) => (
                           <tr key={deal.id} className="border-b hover:bg-gray-50">
-                            <td className="py-4 px-4 font-semibold">
-                              {deal.title}
-                            </td>
-                            <td className="py-4 px-4 text-gray-600">
-                              Influencer
-                            </td>
+                            <td className="py-4 px-4 font-semibold">{deal.title}</td>
+                            <td className="py-4 px-4 text-gray-600">Influencer</td>
                             <td className="py-4 px-4 font-semibold text-primary-600">
                               ₹{deal.dealValue.toLocaleString()}
                             </td>
@@ -234,17 +273,12 @@ export default function CompanyDashboard() {
                               ₹{deal.commission.toLocaleString()}
                             </td>
                             <td className="py-4 px-4">
-                              <span
-                                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                  deal.status === "PENDING"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : deal.status === "ACCEPTED"
-                                    ? "bg-green-100 text-green-700"
-                                    : deal.status === "REJECTED"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-blue-100 text-blue-700"
-                                }`}
-                              >
+                              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                deal.status === "PENDING" ? "bg-yellow-100 text-yellow-700"
+                                : deal.status === "ACCEPTED" ? "bg-green-100 text-green-700"
+                                : deal.status === "REJECTED" ? "bg-red-100 text-red-700"
+                                : "bg-blue-100 text-blue-700"
+                              }`}>
                                 {deal.status}
                               </span>
                             </td>
@@ -261,4 +295,4 @@ export default function CompanyDashboard() {
       </div>
     </div>
   );
-}
+                }
