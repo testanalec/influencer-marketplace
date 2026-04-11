@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { searchYouTubeInfluencers } from "@/lib/youtube";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { searchYouTubeInfluencers } from "@/lib/youtube";
+import { prisma } from "@/lib/prisma";
 
-// Niche keyword mapping for YouTube search
-const NICHE_QUERIES: { niche: string; query: string }[] = [
+const NICHE_QUERIES = [
   { niche: "Fashion", query: "fashion influencer India" },
   { niche: "Beauty", query: "beauty influencer India" },
   { niche: "Tech", query: "tech YouTuber India" },
@@ -13,113 +12,116 @@ const NICHE_QUERIES: { niche: string; query: string }[] = [
   { niche: "Fitness", query: "fitness influencer India" },
   { niche: "Food", query: "food vlogger India" },
   { niche: "Travel", query: "travel vlogger India" },
-];
+  { niche: "Fashion", query: "fashion blogger YouTube" },
+  { niche: "Beauty", query: "makeup tutorial YouTube India" },
+  { niche: "Tech", query: "technology review YouTube India" },
+  { niche: "Gaming", query: "mobile gaming YouTube India" },
+  { niche: "Fitness", query: "workout yoga YouTube India" },
+  { niche: "Food", query: "cooking recipe YouTube India" },
+  { niche: "Travel", query: "travel vlog India YouTube" },
+  ];
 
-export async function POST(request: NextRequest) {
-  try {
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "YOUTUBE_API_KEY is not configured. Please add it to your environment variables." },
-        { status: 500 }
-      );
-    }
+function estimateRatePerPost(subscriberCount: number): number {
+    if (subscriberCount >= 10000000) return 500000;
+    if (subscriberCount >= 1000000) return 100000;
+    if (subscriberCount >= 500000) return 50000;
+    if (subscriberCount >= 100000) return 20000;
+    if (subscriberCount >= 50000) return 10000;
+    if (subscriberCount >= 10000) return 5000;
+    if (subscriberCount >= 1000) return 2000;
+    return 1000;
+}
 
-    let totalSynced = 0;
-    let totalSkipped = 0;
-    const errors: string[] = [];
-
-    for (const { niche, query } of NICHE_QUERIES) {
+  export async function POST(request: Request) {
       try {
-        const result = await searchYouTubeInfluencers(query, 10);
+            const session = await getServerSession(authOptions);
+            if (!session || session.user.role !== "COMPANY") {
+                    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
 
-        for (const channel of result.channels) {
-          // Skip channels with very few subscribers (less than 1000)
-          if (channel.subscriberCount < 1000) {
-            totalSkipped++;
-            continue;
-          }
-
-          // Use YouTube channel ID as a unique email to avoid duplicates
-          const syntheticEmail = `yt_${channel.channelId}@youtube-sync.internal`;
-
-          // Check if this YouTube channel already exists
-          const existingUser = await prisma.user.findUnique({
-            where: { email: syntheticEmail },
-            include: { influencerProfile: true },
-          });
-
-          if (existingUser?.influencerProfile) {
-            // Update existing profile with fresh data
-            await prisma.influencerProfile.update({
-              where: { userId: existingUser.id },
-              data: {
-                name: channel.name,
-                bio: channel.description.slice(0, 500) || `YouTube creator in ${niche}`,
-                avatar: channel.thumbnailUrl,
-                youtubeFollowers: channel.subscriberCount,
-                youtube: channel.customUrl
-                  ? `https://youtube.com/${channel.customUrl}`
-                  : `https://youtube.com/channel/${channel.channelId}`,
-                location: channel.country || null,
-                updatedAt: new Date(),
-              },
-            });
-            totalSynced++;
-          } else {
-            // Create new user + influencer profile for this YouTube channel
-            await prisma.user.create({
-              data: {
-                email: syntheticEmail,
-                password: "youtube-sync-no-login",
-                role: "INFLUENCER",
-                influencerProfile: {
-                  create: {
-                    name: channel.name,
-                    bio: channel.description.slice(0, 500) || `YouTube creator in ${niche}`,
-                    avatar: channel.thumbnailUrl,
-                    niche: niche,
-                    youtube: channel.customUrl
-                      ? `https://youtube.com/${channel.customUrl}`
-                      : `https://youtube.com/channel/${channel.channelId}`,
-                    youtubeFollowers: channel.subscriberCount,
-                    location: channel.country || null,
-                    ratePerPost: estimateRatePerPost(channel.subscriberCount),
-                    currency: "INR",
-                  },
-                },
-              },
-            });
-            totalSynced++;
-          }
+        if (!process.env.YOUTUBE_API_KEY) {
+                return NextResponse.json(
+                  { error: "YouTube API key not configured" },
+                  { status: 500 }
+                        );
         }
-      } catch (err: any) {
-        errors.push(`${niche}: ${err.message}`);
+
+        let totalSynced = 0;
+            const errors: string[] = [];
+
+        for (const { niche, query } of NICHE_QUERIES) {
+                try {
+                          let pageToken: string | undefined = undefined;
+                          const MAX_PAGES = 4; // 50 results × 4 pages = 200 per query
+
+                  for (let page = 0; page < MAX_PAGES; page++) {
+                              const result = await searchYouTubeInfluencers(query, 50, pageToken);
+
+                            for (const channel of result.channels) {
+                                          try {
+                                                          const syntheticEmail = `yt_${channel.channelId}@youtube-sync.internal`;
+
+                                            const user = await prisma.user.upsert({
+                                                              where: { email: syntheticEmail },
+                                                              update: {},
+                                                              create: {
+                                                                                  email: syntheticEmail,
+                                                                                  name: channel.name,
+                                                                                  role: "INFLUENCER",
+                                                                                  password: `yt_${channel.channelId}`,
+                                                              },
+                                            });
+
+                                            await prisma.influencerProfile.upsert({
+                                                              where: { userId: user.id },
+                                                              update: {
+                                                                                  name: channel.name,
+                                                                                  bio: channel.description?.slice(0, 500) || "",
+                                                                                  niche: niche,
+                                                                                  youtube: channel.customUrl || `https://youtube.com/channel/${channel.channelId}`,
+                                                                                  youtubeFollowers: channel.subscriberCount,
+                                                                                  location: channel.country || "IN",
+                                                                                  avatar: channel.thumbnailUrl || "",
+                                                                                  ratePerPost: estimateRatePerPost(channel.subscriberCount),
+                                                              },
+                                                              create: {
+                                                                                  userId: user.id,
+                                                                                  name: channel.name,
+                                                                                  bio: channel.description?.slice(0, 500) || "",
+                                                                                  niche: niche,
+                                                                                  youtube: channel.customUrl || `https://youtube.com/channel/${channel.channelId}`,
+                                                                                  youtubeFollowers: channel.subscriberCount,
+                                                                                  location: channel.country || "IN",
+                                                                                  avatar: channel.thumbnailUrl || "",
+                                                                                  ratePerPost: estimateRatePerPost(channel.subscriberCount),
+                                                              },
+                                            });
+
+                                            totalSynced++;
+                                          } catch (channelError) {
+                                                          // Skip duplicate channels silently
+                                          }
+                            }
+
+                            if (!result.nextPageToken) break;
+                              pageToken = result.nextPageToken;
+                  }
+                } catch (nicheError) {
+                          errors.push(`Error syncing ${niche}: ${nicheError}`);
+                }
+        }
+
+        return NextResponse.json({
+                success: true,
+                message: `Successfully synced ${totalSynced} YouTube influencers`,
+                totalSynced,
+                errors: errors.length > 0 ? errors : undefined,
+        });
+      } catch (error) {
+            console.error("YouTube sync error:", error);
+            return NextResponse.json(
+              { error: "Failed to sync YouTube influencers" },
+              { status: 500 }
+                  );
       }
-    }
-
-    return NextResponse.json({
-      success: true,
-      totalSynced,
-      totalSkipped,
-      errors: errors.length > 0 ? errors : undefined,
-      message: `Successfully synced ${totalSynced} YouTube influencers across ${NICHE_QUERIES.length} niches.`,
-    });
-  } catch (err: any) {
-    console.error("YouTube sync error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to sync YouTube influencers" },
-      { status: 500 }
-    );
   }
-}
-
-// Estimate a reasonable rate per post based on subscriber count
-function estimateRatePerPost(subscribers: number): number {
-  if (subscribers >= 1_000_000) return 100000;  // 1M+ -> ₹1,00,000
-  if (subscribers >= 500_000) return 50000;      // 500K+ -> ₹50,000
-  if (subscribers >= 100_000) return 20000;      // 100K+ -> ₹20,000
-  if (subscribers >= 50_000) return 10000;       // 50K+ -> ₹10,000
-  if (subscribers >= 10_000) return 5000;        // 10K+ -> ₹5,000
-  return 2000;                                    // <10K -> ₹2,000
-}
