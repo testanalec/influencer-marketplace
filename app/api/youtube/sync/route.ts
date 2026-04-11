@@ -22,7 +22,7 @@ const NICHE_QUERIES = [
   ];
 
 function estimateRatePerPost(subscriberCount: number): number {
-    if (subscriberCount >= 10000000) return 500000;
+    if (subscriberCount >= 10000000) return 500000;Expa
     if (subscriberCount >= 1000000) return 100000;
     if (subscriberCount >= 500000) return 50000;
     if (subscriberCount >= 100000) return 20000;
