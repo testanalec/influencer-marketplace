@@ -54,30 +54,6 @@ export default function CompanyDashboard() {
     }
   };
 
-  const syncYouTubeInfluencers = async () => {
-    setSyncing(true);
-    setSyncMessage(null);
-    try {
-      const response = await fetch("/api/youtube/sync", { method: "POST" });
-      const data = await response.json();
-      if (!response.ok) {
-        setSyncMessage({ type: "error", text: data.error || "Sync failed" });
-      } else {
-        setSyncMessage({
-          type: "success",
-          text: data.message || `Synced ${data.totalSynced} YouTube influencers successfully!`,
-        });
-        // Refresh influencer list after sync
-        const res = await fetch("/api/influencers");
-        const updated = await res.json();
-        setInfluencers(updated);
-      }
-    } catch (err) {
-      setSyncMessage({ type: "error", text: "Failed to connect to sync service" });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   if (status === "loading" || loading) {
     return (
@@ -124,44 +100,6 @@ export default function CompanyDashboard() {
           </div>
         </div>
 
-        {/* YouTube Sync Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border-l-4 border-red-500">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <span className="text-red-600">▶</span> YouTube Influencer Sync
-              </h2>
-              <p className="text-gray-600 text-sm mt-1">
-                Auto-fetch and list YouTube influencers from Fashion, Beauty, Tech, Gaming, Fitness, Food &amp; Travel niches
-              </p>
-            </div>
-            <button
-              onClick={syncYouTubeInfluencers}
-              disabled={syncing}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {syncing ? (
-                <>
-                  <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
-                  Syncing YouTube...
-                </>
-              ) : (
-                "🔄 Sync YouTube Influencers"
-              )}
-            </button>
-          </div>
-          {syncMessage && (
-            <div
-              className={`mt-4 px-4 py-3 rounded-lg text-sm font-medium ${
-                syncMessage.type === "success"
-                  ? "bg-green-100 text-green-800 border border-green-300"
-                  : "bg-red-100 text-red-800 border border-red-300"
-              }`}
-            >
-              {syncMessage.type === "success" ? "✅ " : "❌ "}{syncMessage.text}
-            </div>
-          )}
-        </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
