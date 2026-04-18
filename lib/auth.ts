@@ -55,26 +55,16 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          let dbUser = await prisma.user.findUnique({
+          const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
           });
-          if (!dbUser) {
-            dbUser = await prisma.user.create({
+          if (!existingUser) {
+            // Create bare user with no role yet — onboarding page will set role
+            await prisma.user.create({
               data: {
                 email: user.email!,
                 password: "",
-                role: "INFLUENCER",
-              },
-            });
-            await prisma.influencerProfile.create({
-              data: {
-                userId: dbUser.id,
-                name: user.name || user.email!,
-                bio: "Update your bio in your profile.",
-                niche: "Lifestyle",
-                ratePerPost: 0,
-                avatar: user.image || null,
-                status: "PENDING",
+                role: "PENDING_ONBOARDING",
               },
             });
           }
@@ -107,6 +97,11 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith("/")) return baseUrl + url;
+      return baseUrl;
     },
   },
   session: {
