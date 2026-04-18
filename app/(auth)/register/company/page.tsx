@@ -10,12 +10,12 @@ export default function CompanyRegisterPage() {
     password: "",
     confirmPassword: "",
     companyName: "",
+    phone: "",
     industry: "",
     website: "",
     description: "",
     budget: "",
   });
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -23,28 +23,21 @@ export default function CompanyRegisterPage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match");
       return;
     }
-
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
     }
-
     setLoading(true);
-
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -55,6 +48,7 @@ export default function CompanyRegisterPage() {
           role: "COMPANY",
           company: {
             companyName: formData.companyName,
+            phone: formData.phone,
             industry: formData.industry,
             website: formData.website,
             description: formData.description,
@@ -62,14 +56,11 @@ export default function CompanyRegisterPage() {
           },
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         setError(data.error || "Registration failed");
         return;
       }
-
       router.push("/login?registered=true");
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -79,18 +70,9 @@ export default function CompanyRegisterPage() {
   };
 
   const industries = [
-    "Fashion & Apparel",
-    "Beauty & Cosmetics",
-    "Technology",
-    "Food & Beverage",
-    "Travel & Tourism",
-    "Health & Fitness",
-    "Home & Lifestyle",
-    "Entertainment",
-    "Education",
-    "Finance",
-    "Automotive",
-    "Sports",
+    "Fashion & Apparel", "Beauty & Cosmetics", "Technology", "Food & Beverage",
+    "Travel & Tourism", "Health & Fitness", "Home & Lifestyle", "Entertainment",
+    "Education", "Finance", "Automotive", "Sports",
   ];
 
   return (
@@ -111,118 +93,62 @@ export default function CompanyRegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Account Section */}
             <div className="border-b pb-6">
               <h2 className="text-xl font-semibold mb-4">Account Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                  />
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} required className="input-field" />
+                </div>
+                <div>
+                  <label className="form-label">Phone Number</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="input-field" placeholder="+91 98765 43210" />
                 </div>
                 <div>
                   <label className="form-label">Password</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                  />
+                  <input type="password" name="password" value={formData.password} onChange={handleChange} required className="input-field" />
                 </div>
                 <div>
                   <label className="form-label">Confirm Password</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                  />
+                  <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="input-field" />
                 </div>
               </div>
             </div>
 
-            {/* Company Section */}
             <div className="border-b pb-6">
               <h2 className="text-xl font-semibold mb-4">Company Information</h2>
               <div className="space-y-4">
                 <div>
                   <label className="form-label">Company Name</label>
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                  />
+                  <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required className="input-field" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">Industry</label>
-                    <select
-                      name="industry"
-                      value={formData.industry}
-                      onChange={handleChange}
-                      required
-                      className="input-field"
-                    >
+                    <select name="industry" value={formData.industry} onChange={handleChange} required className="input-field">
                       <option value="">Select an industry</option>
                       {industries.map((industry) => (
-                        <option key={industry} value={industry}>
-                          {industry}
-                        </option>
+                        <option key={industry} value={industry}>{industry}</option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="form-label">Website</label>
-                    <input
-                      type="url"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleChange}
-                      className="input-field"
-                      placeholder="https://example.com"
-                    />
+                    <input type="url" name="website" value={formData.website} onChange={handleChange} className="input-field" placeholder="https://example.com" />
                   </div>
                 </div>
                 <div>
                   <label className="form-label">Company Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    required
-                    className="input-field"
-                    rows={3}
-                    placeholder="Tell us about your company..."
-                  />
+                  <textarea name="description" value={formData.description} onChange={handleChange} required className="input-field" rows={3} placeholder="Tell us about your company..." />
                 </div>
               </div>
             </div>
 
-            {/* Budget Section */}
             <div>
               <h2 className="text-xl font-semibold mb-4">Campaign Budget</h2>
               <div>
                 <label className="form-label">Monthly Budget Range</label>
-                <select
-                  name="budget"
-                  value={formData.budget}
-                  onChange={handleChange}
-                  required
-                  className="input-field"
-                >
+                <select name="budget" value={formData.budget} onChange={handleChange} required className="input-field">
                   <option value="">Select a budget range</option>
                   <option value="10000-50000">₹10,000 - ₹50,000</option>
                   <option value="50000-100000">₹50,000 - ₹1,00,000</option>
@@ -233,11 +159,7 @@ export default function CompanyRegisterPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="w-full btn-primary disabled:opacity-50">
               {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
