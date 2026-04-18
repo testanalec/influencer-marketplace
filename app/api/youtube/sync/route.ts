@@ -41,7 +41,6 @@ const ALL_NICHE_QUERIES = [
   // Gaming
   { niche: "Gaming", query: "BGMI gaming YouTube India" },
   { niche: "Gaming", query: "Free Fire India gaming YouTube" },
-  { niche: "Gaming", query: "GTA gaming India YouTube Hindi" },
   { niche: "Gaming", query: "esports India YouTube" },
   { niche: "Gaming", query: "Minecraft India YouTube" },
   { niche: "Gaming", query: "Valorant India YouTube gaming" },
@@ -49,6 +48,7 @@ const ALL_NICHE_QUERIES = [
   { niche: "Gaming", query: "gaming setup India YouTube" },
   { niche: "Gaming", query: "Call of Duty India YouTube" },
   { niche: "Gaming", query: "Roblox India YouTube gaming" },
+  { niche: "Gaming", query: "GTA India YouTube Hindi" },
   // Fitness
   { niche: "Fitness", query: "fitness YouTube India Hindi workout" },
   { niche: "Fitness", query: "yoga India YouTube" },
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
           const { channels, nextPageToken } = await searchYouTubeInfluencers(query, 50, pageToken);
 
           for (const channel of channels) {
-            if (seenChannelIds.has(channel.id)) continue;
+            if (!channel.id || seenChannelIds.has(channel.id)) continue;
             seenChannelIds.add(channel.id);
 
             if (filters.minFollowers && channel.subscriberCount < filters.minFollowers) continue;
@@ -171,10 +171,9 @@ export async function POST(request: Request) {
                 await prisma.influencerProfile.update({
                   where: { userId: existingUser.id },
                   data: {
-                    youtubeSubscribers: channel.subscriberCount,
-                    youtubeHandle: channel.customUrl || channel.name,
+                    youtubeFollowers: channel.subscriberCount,
+                    youtube: channel.customUrl || channel.name,
                     avatar: channel.thumbnail,
-                    niche,
                   },
                 });
                 totalUpdated++;
@@ -182,7 +181,6 @@ export async function POST(request: Request) {
                 const user = await prisma.user.create({
                   data: {
                     email,
-                    name: channel.name,
                     password: "youtube-sync-placeholder",
                     role: "INFLUENCER",
                   },
@@ -191,8 +189,9 @@ export async function POST(request: Request) {
                 await prisma.influencerProfile.create({
                   data: {
                     userId: user.id,
-                    youtubeSubscribers: channel.subscriberCount,
-                    youtubeHandle: channel.customUrl || channel.name,
+                    name: channel.name,
+                    youtubeFollowers: channel.subscriberCount,
+                    youtube: channel.customUrl || channel.name,
                     avatar: channel.thumbnail,
                     bio: channel.description?.slice(0, 500) || channel.name,
                     niche,
@@ -203,14 +202,14 @@ export async function POST(request: Request) {
                 totalSynced++;
               }
             } catch (dbErr: any) {
-              errors.push(`DB error for ${channel.name}: ${dbErr.message}`);
+              errors.push(`DB: ${channel.name}: ${dbErr.message?.slice(0,100)}`);
             }
           }
 
           if (!nextPageToken) break;
           pageToken = nextPageToken;
         } catch (apiErr: any) {
-          errors.push(`API error for query "${query}": ${apiErr.message}`);
+          errors.push(`API "${query}": ${apiErr.message?.slice(0,100)}`);
           break;
         }
       }
