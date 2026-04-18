@@ -4,38 +4,24 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, role, influencer, company } =
-      await request.json();
+    const { email, password, role, influencer, company } = await request.json();
 
     if (!email || !password || !role) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Email already in use" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email already in use" }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     if (role === "INFLUENCER") {
       if (!influencer || !influencer.name || !influencer.niche) {
-        return NextResponse.json(
-          { error: "Missing influencer profile data" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Missing influencer profile data" }, { status: 400 });
       }
-
-      const user = await prisma.user.create({
+      await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -43,6 +29,7 @@ export async function POST(request: NextRequest) {
           influencerProfile: {
             create: {
               name: influencer.name,
+              phone: influencer.phone || null,
               bio: influencer.bio,
               niche: influencer.niche,
               instagram: influencer.instagram,
@@ -53,24 +40,19 @@ export async function POST(request: NextRequest) {
               tiktokFollowers: influencer.tiktokFollowers,
               ratePerPost: influencer.ratePerPost,
               location: influencer.location,
+              status: "PENDING",
             },
           },
         },
       });
+      return NextResponse.json({ message: "Influencer registered successfully" }, { status: 201 });
+    }
 
-      return NextResponse.json(
-        { message: "Influencer registered successfully" },
-        { status: 201 }
-      );
-    } else if (role === "COMPANY") {
+    if (role === "COMPANY") {
       if (!company || !company.companyName || !company.industry) {
-        return NextResponse.json(
-          { error: "Missing company profile data" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Missing company profile data" }, { status: 400 });
       }
-
-      const user = await prisma.user.create({
+      await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -78,30 +60,22 @@ export async function POST(request: NextRequest) {
           companyProfile: {
             create: {
               companyName: company.companyName,
+              phone: company.phone || null,
               industry: company.industry,
               website: company.website,
               description: company.description,
               budget: company.budget,
+              status: "APPROVED",
             },
           },
         },
       });
-
-      return NextResponse.json(
-        { message: "Company registered successfully" },
-        { status: 201 }
-      );
+      return NextResponse.json({ message: "Company registered successfully" }, { status: 201 });
     }
 
-    return NextResponse.json(
-      { error: "Invalid role" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   } catch (err) {
     console.error("Registration error:", err);
-    return NextResponse.json(
-      { error: "Registration failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }
