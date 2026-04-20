@@ -11,7 +11,6 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const niches = ["Lifestyle","Fashion","Tech","Food","Travel","Fitness","Beauty","Gaming","Education","Finance","Other"];
   const KEEP_PER_NICHE = 35;
 
   const allPending = await prisma.influencerProfile.findMany({
@@ -34,19 +33,17 @@ export async function POST() {
     }
   }
 
-  // Approve selected influencers
   const approveResult = await prisma.influencerProfile.updateMany({
     where: { id: { in: toApprove } },
     data: { status: "APPROVED" },
   });
 
-  // Delete the rest (profile first, then user)
   const profilesToDelete = await prisma.influencerProfile.findMany({
     where: { id: { in: toDelete } },
     select: { userId: true },
   });
-  const userIdsToDelete = profilesToDelete.map((p) => p.userId);
 
+  const userIdsToDelete = profilesToDelete.map((p) => p.userId);
   await prisma.influencerProfile.deleteMany({ where: { id: { in: toDelete } } });
   await prisma.user.deleteMany({ where: { id: { in: userIdsToDelete } } });
 
