@@ -17,55 +17,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: {
-            influencerProfile: true,
-            companyProfile: true,
-          },
+          include: { influencerProfile: true, companyProfile: true },
         });
-        if (!user) {
-          return null;
-        }
-        const passwordMatch = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!passwordMatch) {
-          return null;
-        }
+        if (!user) return null;
+        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+        if (!passwordMatch) return null;
         return {
           id: user.id,
           email: user.email,
           role: user.role,
-          name:
-            (user.influencerProfile?.name || user.companyProfile?.companyName) ||
-            user.email,
+          name: (user.influencerProfile?.name || user.companyProfile?.companyName) || user.email,
         };
       },
     }),
   ],
-  pages: {
-    signIn: "/login",
-  },
+  pages: { signIn: "/login" },
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-          });
-          if (!existingUser) {
-            // Create bare user with no role yet — onboarding page will set role
+          const existing = await prisma.user.findUnique({ where: { email: user.email! } });
+          if (!existing) {
             await prisma.user.create({
-              data: {
-                email: user.email!,
-                password: "",
-                role: "PENDING_ONBOARDING",
-              },
+              data: { email: user.email!, password: "", role: "PENDING_ONBOARDING" },
             });
           }
         } catch (err) {
@@ -75,15 +52,14 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
-      if (account?.provider === "google" && token.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email },
-        });
+      // After Google sign-in or session update, always fetch fresh role from DB
+      if ((account?.provider === "google" || trigger === "update") && token.email) {
+        const dbUser = await prisma.user.findUnique({ where: { email: token.email } });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
@@ -104,8 +80,6 @@ export const authOptions: NextAuthOptions = {
       return baseUrl;
     },
   },
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
 };
