@@ -1,23 +1,13 @@
 import { withAuth } from "next-auth/middleware";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const middleware = withAuth(
   function middleware(req: NextRequest) {
     const token = req.nextauth.token;
 
-    // Protect dashboard routes
-    if (
-      req.nextUrl.pathname.startsWith("/dashboard/influencer") &&
-      token?.role !== "INFLUENCER"
-    ) {
-      return null;
-    }
-
-    if (
-      req.nextUrl.pathname.startsWith("/dashboard/company") &&
-      token?.role !== "COMPANY"
-    ) {
-      return null;
+    // Redirect users who signed in via Google but haven't picked a role yet
+    if (token?.role === "PENDING_ONBOARDING" && req.nextUrl.pathname !== "/onboarding") {
+      return NextResponse.redirect(new URL("/onboarding", req.url));
     }
 
     return null;
@@ -30,5 +20,5 @@ export const middleware = withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/onboarding"],
 };
