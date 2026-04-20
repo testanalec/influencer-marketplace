@@ -1,175 +1,92 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 export default function CompanyRegisterPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    companyName: "",
-    phone: "",
-    industry: "",
-    website: "",
-    description: "",
-    budget: "",
-  });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const isGoogle = searchParams.get("google") === "true";
   const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "", password: "", confirmPassword: "", companyName: "", phone: "",
+    industry: "", description: "", website: "", contactPerson: "",
+  });
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  useEffect(() => {
+    if (isGoogle && session?.user) {
+      setFormData((prev) => ({ ...prev, email: session.user.email || "", companyName: session.user.name || "" }));
+    }
+  }, [isGoogle, session]);
+
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match");
-      return;
+  const handleNext = () => {
+    if (step === 1) {
+      if (!formData.companyName || !formData.email) { setError("Company name and email are required."); return; }
+      if (!isGoogle && (!formData.password || formData.password !== formData.confirmPassword)) { setError("Passwords do not match."); return; }
     }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          role: "COMPANY",
-          company: {
-            companyName: formData.companyName,
-            phone: formData.phone,
-            industry: formData.industry,
-            website: formData.website,
-            description: formData.description,
-            budget: formData.budget,
-          },
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error || "Registration failed");
-        return;
-      }
-      router.push("/login?registered=true");
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    setError(""); setStep(step + 1);
   };
 
-  const industries = [
-    "Fashion & Apparel", "Beauty & Cosmetics", "Technology", "Food & Beverage",
-    "Travel & Tourism", "Health & Fitness", "Home & Lifestyle", "Entertainment",
-    "Education", "Finance", "Automotive", "Sports",
-  ];
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setLoading(true); setError("");
+    try {
+      const body = {
+        email: formData.email, companyName: formData.companyName, phone: formData.phone,
+        industry: formData.industry, description: formData.description,
+        website: formData.website, contactPerson: formData.contactPerson, role: "COMPANY",
+      };
+      if (!isGoogle) { body.password = formData.password; } else { body.googleSignIn = "true"; }
+      const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Registration failed."); return; }
+      router.push("/dashboard/company");
+    } catch { setError("Something went wrong."); } finally { setLoading(false); }
+  };
+
+  const industries = ["Technology","Fashion","Food & Beverage","Health & Fitness","Beauty","Travel","Finance","Education","Entertainment","E-commerce","Other"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-2xl">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-2 gradient-text">
-            Register Your Brand
-          </h1>
-          <p className="text-center text-gray-600 mb-8">
-            Find the perfect influencers to promote your brand
-          </p>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="border-b pb-6">
-              <h2 className="text-xl font-semibold mb-4">Account Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Email</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} required className="input-field" />
-                </div>
-                <div>
-                  <label className="form-label">Phone Number</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="input-field" placeholder="+91 98765 43210" />
-                </div>
-                <div>
-                  <label className="form-label">Password</label>
-                  <input type="password" name="password" value={formData.password} onChange={handleChange} required className="input-field" />
-                </div>
-                <div>
-                  <label className="form-label">Confirm Password</label>
-                  <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="input-field" />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-b pb-6">
-              <h2 className="text-xl font-semibold mb-4">Company Information</h2>
+          <h1 className="text-3xl font-bold mb-2 gradient-text">Register as Brand</h1>
+          {isGoogle && <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg mb-4 text-sm">Signing up with Google. Your email is pre-filled.</div>}
+          <div className="flex mb-6 gap-2">
+            {[1,2].map((s) => (<div key={s} className={"flex-1 h-2 rounded-full " + (step >= s ? "bg-primary-500" : "bg-gray-200")} />))}
+          </div>
+          {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            {step === 1 && (
               <div className="space-y-4">
-                <div>
-                  <label className="form-label">Company Name</label>
-                  <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required className="input-field" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">Industry</label>
-                    <select name="industry" value={formData.industry} onChange={handleChange} required className="input-field">
-                      <option value="">Select an industry</option>
-                      {industries.map((industry) => (
-                        <option key={industry} value={industry}>{industry}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label">Website</label>
-                    <input type="url" name="website" value={formData.website} onChange={handleChange} className="input-field" placeholder="https://example.com" />
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label">Company Description</label>
-                  <textarea name="description" value={formData.description} onChange={handleChange} required className="input-field" rows={3} placeholder="Tell us about your company..." />
-                </div>
+                <h2 className="text-lg font-semibold text-gray-700">Account Details</h2>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label><input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} required readOnly={isGoogle} className={"w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" + (isGoogle ? " bg-gray-100 cursor-not-allowed" : "")} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label><input type="text" name="contactPerson" value={formData.contactPerson} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
+                {!isGoogle && (<><div><label className="block text-sm font-medium text-gray-700 mb-1">Password *</label><input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label><input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div></>)}
+                <button type="button" onClick={handleNext} className="w-full btn-primary py-2 rounded-lg">Next</button>
+                {!isGoogle && <p className="text-center text-sm text-gray-600">Already have an account? <Link href="/login" className="text-primary-600 hover:underline">Sign in</Link></p>}
               </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Campaign Budget</h2>
-              <div>
-                <label className="form-label">Monthly Budget Range</label>
-                <select name="budget" value={formData.budget} onChange={handleChange} required className="input-field">
-                  <option value="">Select a budget range</option>
-                  <option value="10000-50000">₹10,000 - ₹50,000</option>
-                  <option value="50000-100000">₹50,000 - ₹1,00,000</option>
-                  <option value="100000-500000">₹1,00,000 - ₹5,00,000</option>
-                  <option value="500000-2000000">₹5,00,000 - ₹20,00,000</option>
-                  <option value="2000000+">₹20,00,000+</option>
-                </select>
+            )}
+            {step === 2 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-700">Company Details</h2>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Industry *</label><select name="industry" value={formData.industry} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2"><option value="">Select an industry</option>{industries.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Description</label><textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Tell influencers about your brand..." /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Website</label><input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://yourcompany.com" className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div>
+                <div className="flex gap-3"><button type="button" onClick={() => setStep(1)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Back</button><button type="submit" disabled={loading} className="flex-1 btn-primary py-2 rounded-lg disabled:opacity-50">{loading ? "Registering..." : "Complete Registration"}</button></div>
               </div>
-            </div>
-
-            <button type="submit" disabled={loading} className="w-full btn-primary disabled:opacity-50">
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
+            )}
           </form>
-
-          <p className="text-center text-gray-600 mt-6">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary-600 font-semibold hover:underline">
-              Sign in here
-            </Link>
-          </p>
         </div>
       </div>
     </div>
