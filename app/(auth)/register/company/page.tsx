@@ -1,1 +1,192 @@
-"use client"; import { useState, useEffect } from "react"; import { useRouter, useSearchParams } from "next/navigation"; import { useSession } from "next-auth/react"; import Link from "next/link"; export default function CompanyRegisterPage() { const { data: session, update } = useSession(); const searchParams = useSearchParams(); const isGoogle = searchParams.get("google") === "true"; const router = useRouter(); const [formData, setFormData] = useState({ email: "", password: "", confirmPassword: "", companyName: "", phone: "", industry: "", description: "", website: "", contactPerson: "", }); const [step, setStep] = useState(1); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); useEffect(() => { if (isGoogle && session?.user) { setFormData((prev) => ({ ...prev, email: session.user.email || "", companyName: session.user.name || "" })); } }, [isGoogle, session]); const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); }; const handleNext = () => { if (step === 1) { if (!formData.companyName || !formData.email) { setError("Company name and email are required."); return; } if (!isGoogle && (!formData.password || formData.password !== formData.confirmPassword)) { setError("Passwords do not match."); return; } } setError(""); setStep(step + 1); }; const handleSubmit = async (e) => { e.preventDefault(); setLoading(true); setError(""); try { const body = { email: formData.email, companyName: formData.companyName, phone: formData.phone, industry: formData.industry, description: formData.description, website: formData.website, contactPerson: formData.contactPerson, role: "COMPANY", }; if (!isGoogle) { body.password = formData.password; } else { body.googleSignIn = "true"; } const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const data = await res.json(); if (!res.ok) { setError(data.error || "Registration failed."); return; } await update(); router.push("/dashboard/company"); } catch { setError("Something went wrong."); } finally { setLoading(false); } }; const industries = ["Technology","Fashion","Food & Beverage","Health & Fitness","Beauty","Travel","Finance","Education","Entertainment","E-commerce","Other"]; return ( <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center py-12 px-4"> <div className="w-full max-w-2xl"> <div className="bg-white rounded-lg shadow-lg p-8"> <h1 className="text-3xl font-bold mb-2 gradient-text">Register as Brand</h1> {isGoogle && <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg mb-4 text-sm">Signing up with Google. Your email is pre-filled.</div>} <div className="flex mb-6 gap-2"> {[1,2].map((s) => (<div key={s} className={"flex-1 h-2 rounded-full " + (step >= s ? "bg-primary-500" : "bg-gray-200")} />))} </div> {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>} <form onSubmit={handleSubmit}> {step === 1 && ( <div className="space-y-4"> <h2 className="text-lg font-semibold text-gray-700">Account Details</h2> <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label><input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} required readOnly={isGoogle} className={"w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" + (isGoogle ? " bg-gray-100 cursor-not-allowed" : "")} /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label><input type="text" name="contactPerson" value={formData.contactPerson} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" /></div> {!isGoogle && (<><div><label className="block text-sm font-medium text-gray-700 mb-1">Password *</label><input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label><input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div></>)} <button type="button" onClick={handleNext} className="w-full btn-primary py-2 rounded-lg">Next</button> {!isGoogle && <p className="text-center text-sm text-gray-600">Already have an account? <Link href="/login" className="text-primary-600 hover:underline">Sign in</Link></p>} </div> )} {step === 2 && ( <div className="space-y-4"> <h2 className="text-lg font-semibold text-gray-700">Company Details</h2> <div><label className="block text-sm font-medium text-gray-700 mb-1">Industry *</label><select name="industry" value={formData.industry} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2"><option value="">Select an industry</option>{industries.map((i) => <option key={i} value={i}>{i}</option>)}</select></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Company Description</label><textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Tell influencers about your brand..." /></div> <div><label className="block text-sm font-medium text-gray-700 mb-1">Website</label><input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://yourcompany.com" className="w-full border border-gray-300 rounded-lg px-3 py-2" /></div> <div className="flex gap-3"><button type="button" onClick={() => setStep(1)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Back</button><button type="submit" disabled={loading} className="flex-1 btn-primary py-2 rounded-lg disabled:opacity-50">{loading ? "Registering..." : "Complete Registration"}</button></div> </div> )} </form> </div> </div> </div> ); }
+"use client";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+
+function CompanyRegisterForm() {
+  const { data: session, update } = useSession();
+  const searchParams = useSearchParams();
+  const isGoogle = searchParams.get("google") === "true";
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    companyName: "",
+    phone: "",
+    industry: "",
+    description: "",
+    website: "",
+    contactPerson: "",
+  });
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isGoogle && session?.user) {
+      setFormData((prev) => ({
+        ...prev,
+        email: session.user.email || "",
+        companyName: session.user.name || "",
+      }));
+    }
+  }, [isGoogle, session]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleNext = () => {
+    if (step === 1) {
+      if (!formData.companyName || !formData.email) {
+        setError("Company name and email are required.");
+        return;
+      }
+      if (!isGoogle && (!formData.password || formData.password !== formData.confirmPassword)) {
+        setError("Passwords do not match.");
+        return;
+      }
+    }
+    setError("");
+    setStep(step + 1);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const body: Record<string, string> = {
+        email: formData.email,
+        companyName: formData.companyName,
+        phone: formData.phone,
+        industry: formData.industry,
+        description: formData.description,
+        website: formData.website,
+        contactPerson: formData.contactPerson,
+        role: "COMPANY",
+      };
+      if (!isGoogle) {
+        body.password = formData.password;
+      } else {
+        body.googleSignIn = "true";
+      }
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Registration failed.");
+        return;
+      }
+      await update();
+      router.push("/dashboard/company");
+    } catch {
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const industries = ["Technology","Fashion","Food & Beverage","Health & Fitness","Beauty","Travel","Finance","Education","Entertainment","E-commerce","Other"];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold mb-2 gradient-text">Register as Brand</h1>
+          {isGoogle && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg mb-4 text-sm">
+              Signing up with Google. Your email is pre-filled.
+            </div>
+          )}
+          <div className="flex mb-6 gap-2">
+            {[1, 2].map((s) => (
+              <div key={s} className={"flex-1 h-2 rounded-full " + (step >= s ? "bg-primary-500" : "bg-gray-200")} />
+            ))}
+          </div>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>
+          )}
+          <form onSubmit={handleSubmit}>
+            {step === 1 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-700">Account Details</h2>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                  <input type="text" name="companyName" value={formData.companyName} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} required readOnly={isGoogle} className={"w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" + (isGoogle ? " bg-gray-100 cursor-not-allowed" : "")} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                  <input type="text" name="contactPerson" value={formData.contactPerson} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                </div>
+                {!isGoogle && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                      <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+                      <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                    </div>
+                  </>
+                )}
+                <button type="button" onClick={handleNext} className="w-full btn-primary py-2 rounded-lg">Next</button>
+                {!isGoogle && (
+                  <p className="text-center text-sm text-gray-600">
+                    Already have an account? <Link href="/login" className="text-primary-600 hover:underline">Sign in</Link>
+                  </p>
+                )}
+              </div>
+            )}
+            {step === 2 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-700">Company Details</h2>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Industry *</label>
+                  <select name="industry" value={formData.industry} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Select an industry</option>
+                    {industries.map((i) => <option key={i} value={i}>{i}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Description</label>
+                  <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Tell influencers about your brand..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                  <input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://yourcompany.com" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setStep(1)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Back</button>
+                  <button type="submit" disabled={loading} className="flex-1 btn-primary py-2 rounded-lg disabled:opacity-50">{loading ? "Registering..." : "Complete Registration"}</button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CompanyRegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-500">Loading...</div>}>
+      <CompanyRegisterForm />
+    </Suspense>
+  );
+}
