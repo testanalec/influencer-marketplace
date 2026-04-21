@@ -1,10 +1,36 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 const NICHES = ["All","Fashion","Beauty","Tech","Gaming","Fitness","Food","Travel","Lifestyle","Business","Education"];
 const STATUS_OPTIONS = ["All","APPROVED","PENDING","REJECTED"];
+
+type SortKey = "name"|"niche"|"followers"|"rate"|"createdAt";
+
+function SortBtn({ col, label, sortBy, setSortBy, setSortDir, sortDir }: {
+  col: SortKey; label: string;
+  sortBy: SortKey; sortDir: "asc"|"desc";
+  setSortBy: React.Dispatch<React.SetStateAction<SortKey>>;
+  setSortDir: React.Dispatch<React.SetStateAction<"asc"|"desc">>;
+}) {
+  const handleClick = () => {
+    if (sortBy === col) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortDir("desc");
+    }
+  };
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-1 hover:text-purple-600 font-semibold text-xs uppercase tracking-wide whitespace-nowrap"
+    >
+      {label} {sortBy === col ? (sortDir === "asc" ? " (asc)" : " (desc)") : ""}
+    </button>
+  );
+}
 
 type Influencer = {
   id: string; userId: string; name: string; bio: string; niche: string;
@@ -43,7 +69,7 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [nicheFilter, setNicheFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [sortBy, setSortBy] = useState<"name"|"niche"|"followers"|"rate"|"createdAt">("createdAt");
+  const [sortBy, setSortBy] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<"asc"|"desc">("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
@@ -118,7 +144,7 @@ export default function AdminDashboard() {
 
   const handleExport = () => {
     const filtered = getFilteredInfluencers();
-    const headers = ["Name","Email","Phone","Niche","Status","Instagram","YouTube","TikTok","Twitter","Facebook","IG Followers","YT Followers","TT Followers","TW Followers","FB Followers","Rate Per Post (₹)","Location","Bio","Joined Date"];
+    const headers = ["Name","Email","Phone","Niche","Status","Instagram","YouTube","TikTok","Twitter","Facebook","IG Followers","YT Followers","TT Followers","TW Followers","FB Followers","Rate Per Post (â¹)","Location","Bio","Joined Date"];
     const rows = filtered.map(inf => [
       inf.name, inf.user?.email || "", inf.phone || "", inf.niche, inf.status,
       inf.instagram || "", inf.youtube || "", inf.tiktok || "", inf.twitter || "", inf.facebook || "",
@@ -153,7 +179,7 @@ export default function AdminDashboard() {
           vb = (b.instagramFollowers||0)+(b.youtubeFollowers||0)+(b.tiktokFollowers||0);
         } else if (sortBy === "rate") { va = a.ratePerPost; vb = b.ratePerPost; }
         else if (sortBy === "createdAt") { va = new Date(a.createdAt).getTime(); vb = new Date(b.createdAt).getTime(); }
-        else { va = (a[sortBy] || "").toLowerCase(); vb = (b[sortBy] || "").toLowerCase(); }
+        else { va = ((a as any)[sortBy] || "").toLowerCase(); vb = ((b as any)[sortBy] || "").toLowerCase(); }
         return sortDir === "asc" ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
       });
   };
@@ -192,19 +218,12 @@ export default function AdminDashboard() {
   const approved = influencers.filter(i => i.status === "APPROVED");
   const totalFollowers = influencers.reduce((s, i) => s + (i.instagramFollowers||0) + (i.youtubeFollowers||0) + (i.tiktokFollowers||0), 0);
 
-  const SortBtn = ({ col, label }: { col: typeof sortBy, label: string }) => (
-    <button onClick={() => { if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortBy(col); setSortDir("desc"); } }}
-      className="flex items-center gap-1 hover:text-purple-600 font-semibold text-xs uppercase tracking-wide whitespace-nowrap">
-      {label} {sortBy === col ? (sortDir === "asc" ? "↑" : "↓") : <span className="opacity-30">↕</span>}
-    </button>
-  );
-
   const tabs = [
-    { id: "overview", label: "Overview", icon: "📊" },
-    { id: "influencers", label: "Influencers", icon: "👥", badge: pending.length > 0 ? pending.length : undefined },
-    { id: "brands", label: "Brands", icon: "🏢" },
-    { id: "deals", label: "Deals", icon: "🤝" },
-    { id: "sync", label: "Sync", icon: "🔄" },
+    { id: "overview", label: "Overview", icon: "ð" },
+    { id: "influencers", label: "Influencers", icon: "ð¥", badge: pending.length > 0 ? pending.length : undefined },
+    { id: "brands", label: "Brands", icon: "ð¢" },
+    { id: "deals", label: "Deals", icon: "ð¤" },
+    { id: "sync", label: "Sync", icon: "ð" },
   ];
 
   return (
@@ -225,7 +244,7 @@ export default function AdminDashboard() {
           ))}
         </nav>
         <div className="p-3 border-t">
-          <a href="/" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100">← Back to site</a>
+          <a href="/" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100">â Back to site</a>
         </div>
       </aside>
 
@@ -239,14 +258,14 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Dashboard Overview</h1>
               <p className="text-gray-500 text-sm mb-6">Platform health at a glance</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard label="Total Influencers" value={influencers.length} icon="👥" color="bg-purple-100" />
-                <StatCard label="Approved" value={approved.length} icon="✅" color="bg-green-100" />
-                <StatCard label="Pending Approval" value={pending.length} icon="⏳" color="bg-yellow-100" />
-                <StatCard label="Total Brands" value={companies.length} icon="🏢" color="bg-blue-100" />
-                <StatCard label="Total Deals" value={deals.length} icon="🤝" color="bg-pink-100" />
-                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="📱" color="bg-orange-100" />
-                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="🚀" color="bg-indigo-100" />
-                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="🏆" color="bg-emerald-100" />
+                <StatCard label="Total Influencers" value={influencers.length} icon="ð¥" color="bg-purple-100" />
+                <StatCard label="Approved" value={approved.length} icon="â" color="bg-green-100" />
+                <StatCard label="Pending Approval" value={pending.length} icon="â³" color="bg-yellow-100" />
+                <StatCard label="Total Brands" value={companies.length} icon="ð¢" color="bg-blue-100" />
+                <StatCard label="Total Deals" value={deals.length} icon="ð¤" color="bg-pink-100" />
+                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="ð±" color="bg-orange-100" />
+                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="ð" color="bg-indigo-100" />
+                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="ð" color="bg-emerald-100" />
               </div>
 
               {/* Niche breakdown */}
@@ -268,8 +287,8 @@ export default function AdminDashboard() {
               {pending.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-gray-900">⏳ Pending Approvals ({pending.length})</h2>
-                    <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all →</button>
+                    <h2 className="font-bold text-gray-900">â³ Pending Approvals ({pending.length})</h2>
+                    <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all â</button>
                   </div>
                   <div className="space-y-2">
                     {pending.slice(0,5).map(inf => (
@@ -279,7 +298,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900">{inf.name}</p>
-                          <p className="text-xs text-gray-500">{inf.niche} · {inf.user?.email}</p>
+                          <p className="text-xs text-gray-500">{inf.niche} Â· {inf.user?.email}</p>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
                           <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-700">Approve</button>
@@ -304,20 +323,20 @@ export default function AdminDashboard() {
                 <div className="flex gap-2">
                   {selectedIds.size > 0 && (
                     <>
-                      <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">✓ Approve ({selectedIds.size})</button>
-                      <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">✗ Reject ({selectedIds.size})</button>
-                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">🗑 Delete ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">â Approve ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">â Reject ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">ð Delete ({selectedIds.size})</button>
                     </>
                   )}
                   <button onClick={handleExport} className="bg-purple-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
-                    ⬇ Export CSV
+                    â¬ Export CSV
                   </button>
                 </div>
               </div>
 
               {/* Filters */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3">
-                <input type="text" placeholder="Search name, email, niche…" value={search}
+                <input type="text" placeholder="Search name, email, nicheâ¦" value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-purple-400" />
                 <select value={nicheFilter} onChange={e => { setNicheFilter(e.target.value); setPage(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
@@ -327,7 +346,7 @@ export default function AdminDashboard() {
                   {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                 </select>
                 {(search || nicheFilter !== "All" || statusFilter !== "All") && (
-                  <button onClick={() => { setSearch(""); setNicheFilter("All"); setStatusFilter("All"); setPage(1); }} className="text-sm text-gray-500 hover:text-gray-700 px-2">✕ Clear</button>
+                  <button onClick={() => { setSearch(""); setNicheFilter("All"); setStatusFilter("All"); setPage(1); }} className="text-sm text-gray-500 hover:text-gray-700 px-2">â Clear</button>
                 )}
               </div>
 
@@ -345,13 +364,13 @@ export default function AdminDashboard() {
                               else setSelectedIds(new Set());
                             }} />
                         </th>
-                        <th className="py-3 px-4 text-left"><SortBtn col="name" label="Name" /></th>
-                        <th className="py-3 px-4 text-left"><SortBtn col="niche" label="Niche" /></th>
+                        <th className="py-3 px-4 text-left"><SortBtn col="name" label="Name" sortBy={sortBy} sortDir={sortDir} setSortBy={setSortBy} setSortDir={setSortDir} /></th>
+                        <th className="py-3 px-4 text-left"><SortBtn col="niche" label="Niche" sortBy={sortBy} sortDir={sortDir} setSortBy={setSortBy} setSortDir={setSortDir} /></th>
                         <th className="py-3 px-4 text-left text-xs uppercase tracking-wide font-semibold text-gray-500">Status</th>
-                        <th className="py-3 px-4 text-left"><SortBtn col="followers" label="Followers" /></th>
-                        <th className="py-3 px-4 text-left"><SortBtn col="rate" label="Rate/Post" /></th>
+                        <th className="py-3 px-4 text-left"><SortBtn col="followers" label="Followers" sortBy={sortBy} sortDir={sortDir} setSortBy={setSortBy} setSortDir={setSortDir} /></th>
+                        <th className="py-3 px-4 text-left"><SortBtn col="rate" label="Rate/Post" sortBy={sortBy} sortDir={sortDir} setSortBy={setSortBy} setSortDir={setSortDir} /></th>
                         <th className="py-3 px-4 text-left text-xs uppercase tracking-wide font-semibold text-gray-500">Platforms</th>
-                        <th className="py-3 px-4 text-left"><SortBtn col="createdAt" label="Joined" /></th>
+                        <th className="py-3 px-4 text-left"><SortBtn col="createdAt" label="Joined" sortBy={sortBy} sortDir={sortDir} setSortBy={setSortBy} setSortDir={setSortDir} /></th>
                         <th className="py-3 px-4 text-left text-xs uppercase tracking-wide font-semibold text-gray-500">Actions</th>
                       </tr>
                     </thead>
@@ -388,27 +407,27 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="py-3 px-4 text-gray-600 font-medium">
-                              {totalF >= 1000000 ? `${(totalF/1000000).toFixed(1)}M` : totalF >= 1000 ? `${(totalF/1000).toFixed(0)}K` : totalF || "—"}
+                              {totalF >= 1000000 ? `${(totalF/1000000).toFixed(1)}M` : totalF >= 1000 ? `${(totalF/1000).toFixed(0)}K` : totalF || "â"}
                             </td>
-                            <td className="py-3 px-4 text-gray-600">₹{inf.ratePerPost?.toLocaleString() || "—"}</td>
+                            <td className="py-3 px-4 text-gray-600">â¹{inf.ratePerPost?.toLocaleString() || "â"}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
-                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">📸</span>}
-                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">▶️</span>}
-                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">🎵</span>}
-                                {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">𝕏</span>}
+                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">ð¸</span>}
+                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">â¶ï¸</span>}
+                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">ðµ</span>}
+                                {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">ð</span>}
                               </div>
                             </td>
                             <td className="py-3 px-4 text-gray-400 text-xs">{new Date(inf.createdAt).toLocaleDateString("en-IN")}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
                                 {inf.status !== "APPROVED" && (
-                                  <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="Approve">✓</button>
+                                  <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="Approve">â</button>
                                 )}
                                 {inf.status !== "REJECTED" && (
-                                  <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">✗</button>
+                                  <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">â</button>
                                 )}
-                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">🗑</button>
+                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">ð</button>
                               </div>
                             </td>
                           </tr>
@@ -421,14 +440,14 @@ export default function AdminDashboard() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
-                    <p className="text-sm text-gray-500">Showing {(page-1)*PER_PAGE+1}–{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</p>
+                    <p className="text-sm text-gray-500">Showing {(page-1)*PER_PAGE+1}â{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</p>
                     <div className="flex gap-2">
-                      <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">← Prev</button>
+                      <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">â Prev</button>
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         const p = Math.max(1, Math.min(page - 2 + i, totalPages - 4 + i));
                         return <button key={p} onClick={() => setPage(p)} className={`text-sm w-8 h-8 rounded-lg ${page === p ? "bg-purple-600 text-white" : "border hover:bg-gray-100"}`}>{p}</button>;
                       })}
-                      <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">Next →</button>
+                      <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">Next â</button>
                     </div>
                   </div>
                 )}
@@ -463,8 +482,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-4 text-gray-600">{c.user?.email}</td>
                         <td className="py-3 px-4 text-gray-600">{c.industry}</td>
-                        <td className="py-3 px-4 text-gray-400">{c.phone || "—"}</td>
-                        <td className="py-3 px-4">{c.website ? <a href={c.website} target="_blank" className="text-purple-600 hover:underline text-xs">{c.website.replace(/https?:\/\/, "")}</a> : "—"}</td>
+                        <td className="py-3 px-4 text-gray-400">{c.phone || "â"}</td>
+                        <td className="py-3 px-4">{c.website ? <a href={c.website} target="_blank" className="text-purple-600 hover:underline text-xs">{c.website.replace("https://", "").replace("http://", "")}</a> : "â"}</td>
                         <td className="py-3 px-4 text-gray-400 text-xs">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                       </tr>
                     ))}
@@ -506,8 +525,8 @@ export default function AdminDashboard() {
                           <p className="font-medium text-gray-900">{d.title}</p>
                           <p className="text-xs text-gray-400 truncate max-w-xs">{d.description}</p>
                         </td>
-                        <td className="py-3 px-4 font-semibold text-purple-600">₹{d.dealValue?.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-red-500">₹{d.commission?.toLocaleString()}</td>
+                        <td className="py-3 px-4 font-semibold text-purple-600">â¹{d.dealValue?.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-red-500">â¹{d.commission?.toLocaleString()}</td>
                         <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${d.status==="ACCEPTED"?"bg-green-100 text-green-700":d.status==="REJECTED"?"bg-red-100 text-red-700":d.status==="COMPLETED"?"bg-blue-100 text-blue-700":"bg-yellow-100 text-yellow-700"}`}>{d.status}</span>
                         </td>
@@ -526,7 +545,7 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-gray-900">Data Sync</h1>
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">▶️</div>
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">â¶ï¸</div>
                   <div><h2 className="font-bold text-gray-900">YouTube Influencer Sync</h2><p className="text-sm text-gray-500">Auto-fetch Indian YouTube influencers by niche</p></div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mb-4">
@@ -541,19 +560,19 @@ export default function AdminDashboard() {
                     <input type="number" value={syncFilters.minFollowers} onChange={e => setSyncFilters({...syncFilters, minFollowers: e.target.value})} placeholder="10000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Max Rate (₹)</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Max Rate (â¹)</label>
                     <input type="number" value={syncFilters.maxRate} onChange={e => setSyncFilters({...syncFilters, maxRate: e.target.value})} placeholder="50000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                   </div>
                 </div>
                 <button onClick={handleSync} disabled={syncing} className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {syncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>🔄 Sync YouTube</>}
+                  {syncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>ð Sync YouTube</>}
                 </button>
-                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `❌ ${syncResult.error}` : `✅ ${syncResult.message}`}</div>}
+                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `â ${syncResult.error}` : `â ${syncResult.message}`}</div>}
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">📱</div>
+                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">ð±</div>
                   <div><h2 className="font-bold text-gray-900">Instagram & Facebook Sync</h2><p className="text-sm text-gray-500">Update follower counts for influencers with handles set</p></div>
                 </div>
                 <div className="flex items-end gap-4 mb-4">
@@ -563,9 +582,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSocialSync} disabled={socialSyncing} className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {socialSyncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>📲 Sync Instagram & Facebook</>}
+                  {socialSyncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>ð² Sync Instagram & Facebook</>}
                 </button>
-                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `❌ ${socialResult.error}` : `✅ ${socialResult.message}`}</div>}
+                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `â ${socialResult.error}` : `â ${socialResult.message}`}</div>}
               </div>
             </div>
           )}
