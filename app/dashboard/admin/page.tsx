@@ -144,7 +144,7 @@ export default function AdminDashboard() {
 
   const handleExport = () => {
     const filtered = getFilteredInfluencers();
-    const headers = ["Name","Email","Phone","Niche","Status","Instagram","YouTube","TikTok","Twitter","Facebook","IG Followers","YT Followers","TT Followers","TW Followers","FB Followers","Rate Per Post (â¹)","Location","Bio","Joined Date"];
+    const headers = ["Name","Email","Phone","Niche","Status","Instagram","YouTube","TikTok","Twitter","Facebook","IG Followers","YT Followers","TT Followers","TW Followers","FB Followers","Rate Per Post (₹)","Location","Bio","Joined Date"];
     const rows = filtered.map(inf => [
       inf.name, inf.user?.email || "", inf.phone || "", inf.niche, inf.status,
       inf.instagram || "", inf.youtube || "", inf.tiktok || "", inf.twitter || "", inf.facebook || "",
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
           ))}
         </nav>
         <div className="p-3 border-t">
-          <a href="/" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100">â Back to site</a>
+          <a href="/" className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100">← Back to site</a>
         </div>
       </aside>
 
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
                 <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-bold text-gray-900">\u23F3 Pending Approvals ({pending.length})</h2>
-                    <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all â</button>
+                    <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all →</button>
                   </div>
                   <div className="space-y-2">
                     {pending.slice(0,5).map(inf => (
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900">{inf.name}</p>
-                          <p className="text-xs text-gray-500">{inf.niche} Â· {inf.user?.email}</p>
+                          <p className="text-xs text-gray-500">{inf.niche} · {inf.user?.email}</p>
                         </div>
                         <div className="flex gap-2 flex-shrink-0">
                           <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-green-700">Approve</button>
@@ -323,8 +323,8 @@ export default function AdminDashboard() {
                 <div className="flex gap-2">
                   {selectedIds.size > 0 && (
                     <>
-                      <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">â Approve ({selectedIds.size})</button>
-                      <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">â Reject ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">✓ Approve ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">✗ Reject ({selectedIds.size})</button>
                       <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">\u{1F5D1} Delete ({selectedIds.size})</button>
                     </>
                   )}
@@ -336,7 +336,7 @@ export default function AdminDashboard() {
 
               {/* Filters */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3">
-                <input type="text" placeholder="Search name, email, nicheâ¦" value={search}
+                <input type="text" placeholder="Search name, email, niche…" value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-purple-400" />
                 <select value={nicheFilter} onChange={e => { setNicheFilter(e.target.value); setPage(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
                   {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                 </select>
                 y(search || nicheFilter !== "All" || statusFilter !== "All") && (
-                  <button onClick={() => { setSearch(""); setNicheFilter("All"); setStatusFilter("All"); setPage(1); }} className="text-sm text-gray-500 hover:text-gray-700 px-2">â Clear</button>
+                  <button onClick={() => { setSearch(""); setNicheFilter("All"); setStatusFilter("All"); setPage(1); }} className="text-sm text-gray-500 hover:text-gray-700 px-2">✕ Clear</button>
                 )}
               </div>
 
@@ -407,25 +407,25 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="py-3 px-4 text-gray-600 font-medium">
-                              {totalF >= 1000000 ? `${(totalF/1000000).toFixed(1)}M` : totalF >= 1000 ? `${(totalF/1000).toFixed(0)}K` : totalF || "â"}
+                              {totalF >= 1000000 ? `${(totalF/1000000).toFixed(1)}M` : totalF >= 1000 ? `${(totalF/1000).toFixed(0)}K` : totalF || "—"}
                             </td>
-                            <td className="py-3 px-4 text-gray-600">â¹{inf.ratePerPost?.toLocaleString() || "â"}</td>
+                            <td className="py-3 px-4 text-gray-600">₹{inf.ratePerPost?.toLocaleString() || "—"}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
                                 {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">\u{1F4F8}</span>}
                                 {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">\u25B6\uFE0F</span>}
                                 {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">\u{1F3B5}</span>}
-                                {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">ð</span>}
+                                {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">𝕏</span>}
                               </div>
                             </td>
                             <td className="py-3 px-4 text-gray-400 text-xs">{new Date(inf.createdAt).toLocaleDateString("en-IN")}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
                                 {inf.status !== "APPROVED" && (
-                                  <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="Approve">â</button>
+                                  <button onClick={() => handleApprove(inf.userId, "APPROVED")} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="Approve">✓</button>
                                 )}
                                 {inf.status !== "REJECTED" && (
-                                  <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">â</button>
+                                  <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">✗</button>
                                 )}
                                 <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">\u{1F5D1}</button>
                               </div>
@@ -440,14 +440,14 @@ export default function AdminDashboard() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
-                    <p className="text-sm text-gray-500">Showing {(page-1)*PER_PAGE+1}â{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</p>
+                    <p className="text-sm text-gray-500">Showing {(page-1)*PER_PAGE+1}–{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</p>
                     <div className="flex gap-2">
-                      <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">â Prev</button>
+                      <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">← Prev</button>
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         const p = Math.max(1, Math.min(page - 2 + i, totalPages - 4 + i));
                         return <button key={p} onClick={() => setPage(p)} className={`text-sm w-8 h-8 rounded-lg ${page === p ? "bg-purple-600 text-white" : "border hover:bg-gray-100"}`}>{p}</button>;
                       })}
-                      <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">Next â</button>
+                      <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages} className="text-sm px-3 py-1 border rounded-lg disabled:opacity-40 hover:bg-gray-100">Next →</button>
                     </div>
                   </div>
                 )}
@@ -482,8 +482,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-4 text-gray-600">{c.user?.email}</td>
                         <td className="py-3 px-4 text-gray-600">{c.industry}</td>
-                        <td className="py-3 px-4 text-gray-400">{c.phone || "â"}</td>
-                        <td className="py-3 px-4">{c.website ? <a href={c.website} target="_blank" className="text-purple-600 hover:underline text-xs">{c.website.replace("https://", "").replace("http://", "")}</a> : "â"}</td>
+                        <td className="py-3 px-4 text-gray-400">{c.phone || "—"}</td>
+                        <td className="py-3 px-4">{c.website ? <a href={c.website} target="_blank" className="text-purple-600 hover:underline text-xs">{c.website.replace("https://", "").replace("http://", "")}</a> : "—"}</td>
                         <td className="py-3 px-4 text-gray-400 text-xs">{new Date(c.createdAt).toLocaleDateString("en-IN")}</td>
                       </tr>
                     ))}
@@ -525,8 +525,8 @@ export default function AdminDashboard() {
                           <p className="font-medium text-gray-900">{d.title}</p>
                           <p className="text-xs text-gray-400 truncate max-w-xs">{d.description}</p>
                         </td>
-                        <td className="py-3 px-4 font-semibold text-purple-600">â¹{d.dealValue?.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-red-500">â¹{d.commission?.toLocaleString()}</td>
+                        <td className="py-3 px-4 font-semibold text-purple-600">₹{d.dealValue?.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-red-500">₹{d.commission?.toLocaleString()}</td>
                         <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${d.status==="ACCEPTED"?"bg-green-100 text-green-700":d.status==="REJECTED"?"bg-red-100 text-red-700":d.status==="COMPLETED"?"bg-blue-100 text-blue-700":"bg-yellow-100 text-yellow-700"}`}>{d.status}</span>
                         </td>
@@ -560,12 +560,12 @@ export default function AdminDashboard() {
                     <input type="number" value={syncFilters.minFollowers} onChange={e => setSyncFilters({...syncFilters, minFollowers: e.target.value})} placeholder="10000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Max Rate (â¹)</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Max Rate (₹)</label>
                     <input type="number" value={syncFilters.maxRate} onChange={e => setSyncFilters({...syncFilters, maxRate: e.target.value})} placeholder="50000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                   </div>
                 </div>
                 <button onClick={handleSync} disabled={syncing} className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {syncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>\u{1F504} Sync YouTube</>}
+                  {syncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>\u{1F504} Sync YouTube</>}
                 </button>
                 {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `\u274C ${syncResult.error}` : `\u2705 ${syncResult.message}`}</div>}
               </div>
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSocialSync} disabled={socialSyncing} className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {socialSyncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>\u{1F4F2} Sync Instagram & Facebook</>}
+                  {socialSyncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>\u{1F4F2} Sync Instagram & Facebook</>}
                 </button>
                 {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `\u274C ${socialResult.error}` : `\u2705 ${socialResult.message}`}</div>}
               </div>
