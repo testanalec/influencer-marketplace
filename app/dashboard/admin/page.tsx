@@ -219,11 +219,11 @@ export default function AdminDashboard() {
   const totalFollowers = influencers.reduce((s, i) => s + (i.instagramFollowers||0) + (i.youtubeFollowers||0) + (i.tiktokFollowers||0), 0);
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: "ð" },
-    { id: "influencers", label: "Influencers", icon: "ð¥", badge: pending.length > 0 ? pending.length : undefined },
-    { id: "brands", label: "Brands", icon: "ð¢" },
-    { id: "deals", label: "Deals", icon: "ð¤" },
-    { id: "sync", label: "Sync", icon: "ð" },
+    { id: "overview", label: "Overview", icon: "\u{1F4CA}" },
+    { id: "influencers", label: "Influencers", icon: "\u{1F465}", badge: pending.length > 0 ? pending.length : undefined },
+    { id: "brands", label: "Brands", icon: "\u{1F3E2}" },
+    { id: "deals", label: "Deals", icon: "\u{1F91D}" },
+    { id: "sync", label: "Sync", icon: "\u{1F504}" },
   ];
 
   return (
@@ -258,14 +258,14 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Dashboard Overview</h1>
               <p className="text-gray-500 text-sm mb-6">Platform health at a glance</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard label="Total Influencers" value={influencers.length} icon="ð¥" color="bg-purple-100" />
-                <StatCard label="Approved" value={approved.length} icon="â" color="bg-green-100" />
-                <StatCard label="Pending Approval" value={pending.length} icon="â³" color="bg-yellow-100" />
-                <StatCard label="Total Brands" value={companies.length} icon="ð¢" color="bg-blue-100" />
-                <StatCard label="Total Deals" value={deals.length} icon="ð¤" color="bg-pink-100" />
-                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="ð±" color="bg-orange-100" />
-                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="ð" color="bg-indigo-100" />
-                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="ð" color="bg-emerald-100" />
+                <StatCard label="Total Influencers" value={influencers.length} icon="\u{1F465}" color="bg-purple-100" />
+                <StatCard label="Approved" value={approved.length} icon="\u2705" color="bg-green-100" />
+                <StatCard label="Pending Approval" value={pending.length} icon="\u23F3" color="bg-yellow-100" />
+                <StatCard label="Total Brands" value={companies.length} icon="\u{1F3E2}" color="bg-blue-100" />
+                <StatCard label="Total Deals" value={deals.length} icon="\u{1F91D}" color="bg-pink-100" />
+                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="\u{1F4F1}" color="bg-orange-100" />
+                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="\u{1F680}" color="bg-indigo-100" />
+                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="\u{1F3C6}" color="bg-emerald-100" />
               </div>
 
               {/* Niche breakdown */}
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
                   <h2 className="font-bold text-gray-900 mb-4">Influencers by Niche</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {Object.entries(stats.byNiche).sort((a,b) => (b[1] as number)-(a[1] as number)).map(([niche, count]) => (
+                             {Object.entries(stats.byNiche).sort((a,b) => (b[1] as number)-(a[1] as number)).map(([niche, count]) => (
                       <div key={niche} className="bg-gray-50 rounded-lg p-3 text-center">
                         <p className="text-xl font-bold text-purple-600">{count as number}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{niche}</p>
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
               {pending.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-gray-900">â³ Pending Approvals ({pending.length})</h2>
+                    <h2 className="font-bold text-gray-900">\u23F3 Pending Approvals ({pending.length})</h2>
                     <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all â</button>
                   </div>
                   <div className="space-y-2">
@@ -325,11 +325,11 @@ export default function AdminDashboard() {
                     <>
                       <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">â Approve ({selectedIds.size})</button>
                       <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">â Reject ({selectedIds.size})</button>
-                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">ð Delete ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">\u{1F5D1} Delete ({selectedIds.size})</button>
                     </>
                   )}
                   <button onClick={handleExport} className="bg-purple-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
-                    â¬ Export CSV
+                    \u2B07 Export CSV
                   </button>
                 </div>
               </div>
@@ -345,7 +345,7 @@ export default function AdminDashboard() {
                 <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                   {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                 </select>
-                {(search || nicheFilter !== "All" || statusFilter !== "All") && (
+                y(search || nicheFilter !== "All" || statusFilter !== "All") && (
                   <button onClick={() => { setSearch(""); setNicheFilter("All"); setStatusFilter("All"); setPage(1); }} className="text-sm text-gray-500 hover:text-gray-700 px-2">â Clear</button>
                 )}
               </div>
@@ -412,9 +412,9 @@ export default function AdminDashboard() {
                             <td className="py-3 px-4 text-gray-600">â¹{inf.ratePerPost?.toLocaleString() || "â"}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
-                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">ð¸</span>}
-                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">â¶ï¸</span>}
-                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">ðµ</span>}
+                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">\u{1F4F8}</span>}
+                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">\u25B6\uFE0F</span>}
+                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">\u{1F3B5}</span>}
                                 {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">ð</span>}
                               </div>
                             </td>
@@ -427,7 +427,7 @@ export default function AdminDashboard() {
                                 {inf.status !== "REJECTED" && (
                                   <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">â</button>
                                 )}
-                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">ð</button>
+                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">\u{1F5D1}</button>
                               </div>
                             </td>
                           </tr>
@@ -545,7 +545,7 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-gray-900">Data Sync</h1>
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">â¶ï¸</div>
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">\u25B6\uFE0F</div>
                   <div><h2 className="font-bold text-gray-900">YouTube Influencer Sync</h2><p className="text-sm text-gray-500">Auto-fetch Indian YouTube influencers by niche</p></div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mb-4">
@@ -565,14 +565,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSync} disabled={syncing} className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {syncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>ð Sync YouTube</>}
+                  {syncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>\u{1F504} Sync YouTube</>}
                 </button>
-                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `â ${syncResult.error}` : `â ${syncResult.message}`}</div>}
+                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `\u274C ${syncResult.error}` : `\u2705 ${syncResult.message}`}</div>}
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">ð±</div>
+                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">\u{1F4F1}</div>
                   <div><h2 className="font-bold text-gray-900">Instagram & Facebook Sync</h2><p className="text-sm text-gray-500">Update follower counts for influencers with handles set</p></div>
                 </div>
                 <div className="flex items-end gap-4 mb-4">
@@ -582,9 +582,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSocialSync} disabled={socialSyncing} className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {socialSyncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>ð² Sync Instagram & Facebook</>}
+                  {socialSyncing ? <><span className="animate-spin inline-block">â³</span> Syncing...</> : <>\u{1F4F2} Sync Instagram & Facebook</>}
                 </button>
-                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `â ${socialResult.error}` : `â ${socialResult.message}`}</div>}
+                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `\u274C ${socialResult.error}` : `\u2705 ${socialResult.message}`}</div>}
               </div>
             </div>
           )}
