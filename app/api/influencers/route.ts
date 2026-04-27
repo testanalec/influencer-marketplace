@@ -6,18 +6,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const niche = searchParams.get("niche");
     const minFollowers = searchParams.get("minFollowers");
+    const name = searchParams.get("name");
+    const includeAll = searchParams.get("includeAll") === "true";
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
 
     const where: any = {};
+
+    if (!includeAll) {
+      where.status = "APPROVED";
+    }
 
     if (niche && niche !== "") {
       where.niche = niche;
     }
 
+    if (name && name.trim() !== "") {
+      where.name = { contains: name.trim(), mode: "insensitive" };
+    }
+
     let influencers = await prisma.influencerProfile.findMany({
       where,
-      include: {
-        user: true,
-      },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+      ...(limit ? { take: limit } : {}),
     });
 
     if (minFollowers) {

@@ -20,6 +20,7 @@ model User {
   companyProfile    CompanyProfile?
   sentDeals         Deal[] @relation("CompanyDeals")
   receivedDeals     Deal[] @relation("InfluencerDeals")
+  sentMessages      DealMessage[] @relation("SentMessages")
 }
 
 model InfluencerProfile {
@@ -96,6 +97,18 @@ model Deal {
   commission  Float
   status      String @default("PENDING")
 
+  messages    DealMessage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DealMessage {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
 }

@@ -78,10 +78,9 @@ export default function Home() {
           </div>
           <div className="card">
             <div className="text-4xl mb-4">🔒</div>
-            <h3 className="text-xl font-bold mb-3">Secure Deals</h3>
+            <h3 className="text-xl font-bold mb-3">Verified Deals</h3>
             <p className="text-gray-600">
-              All collaborations are protected by our escrow system ensuring
-              safe and trustworthy transactions.
+              All collaborations go through our platform with transparent deal terms, clear status tracking, and direct messaging between brands and creators.
             </p>
           </div>
           <div className="card">
