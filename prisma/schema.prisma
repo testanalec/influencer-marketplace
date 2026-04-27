@@ -75,6 +75,14 @@ model CompanyProfile {
   updatedAt DateTime @updatedAt
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
 model Deal {
   id           String @id @default(cuid())
   companyId    String
