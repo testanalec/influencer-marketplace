@@ -109,7 +109,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="â¢Â§â¢"
+              placeholder="••••••••"
             />
           </div>
           <button
@@ -122,7 +122,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
-          Don&t have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="text-primary-600 hover:underline font-medium">
             Sign up
           </Link>

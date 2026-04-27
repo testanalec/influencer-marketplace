@@ -203,7 +203,7 @@ export default function CompanyDashboard() {
                         {deals.map((deal) => (
                           <tr key={deal.id} className="border-b hover:bg-gray-50">
                             <td className="py-4 px-4 font-semibold">{deal.title}</td>
-                            <td className="py-4 px-4 text-gray-600">Influencer</td>
+                            <td className="py-4 px-4 text-gray-600">{(deal as any).influencer?.influencerProfile?.name || "Unknown"}</td>
                             <td className="py-4 px-4 font-semibold text-primary-600">
                               ₹{deal.dealValue.toLocaleString()}
                             </td>

@@ -7,7 +7,15 @@ export function Navbar() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isInfluencer = session?.user?.role === "INFLUENCER";
+  const role = session?.user?.role;
+  const isInfluencer = role === "INFLUENCER";
+  const isAdmin = role === "ADMIN";
+
+  const getDashboardHref = () => {
+    if (isAdmin) return "/dashboard/admin";
+    if (isInfluencer) return "/dashboard/influencer";
+    return "/dashboard/company";
+  };
 
   return (
     <nav className="bg-white shadow-md">
@@ -24,17 +32,19 @@ export function Navbar() {
           {session ? (
             <>
               <Link
-                href={isInfluencer ? "/dashboard/influencer" : "/dashboard/company"}
+                href={getDashboardHref()}
                 className="text-gray-700 hover:text-primary-600"
               >
                 Dashboard
               </Link>
-              <Link
-                href={isInfluencer ? "/dashboard/influencer/profile" : "/dashboard/company/profile"}
-                className="text-gray-700 hover:text-primary-600"
-              >
-                Profile
-              </Link>
+              {!isAdmin && (
+                <Link
+                  href={isInfluencer ? "/dashboard/influencer/profile" : "/dashboard/company/profile"}
+                  className="text-gray-700 hover:text-primary-600"
+                >
+                  Profile
+                </Link>
+              )}
               <button
                 onClick={() => signOut()}
                 className="btn-secondary text-sm px-4 py-2"
@@ -72,17 +82,19 @@ export function Navbar() {
             {session ? (
               <>
                 <Link
-                  href={isInfluencer ? "/dashboard/influencer" : "/dashboard/company"}
+                  href={getDashboardHref()}
                   className="block text-gray-700 hover:text-primary-600"
                 >
                   Dashboard
                 </Link>
-                <Link
-                  href={isInfluencer ? "/dashboard/influencer/profile" : "/dashboard/company/profile"}
-                  className="block text-gray-700 hover:text-primary-600"
-                >
-                  Profile
-                </Link>
+                {!isAdmin && (
+                  <Link
+                    href={isInfluencer ? "/dashboard/influencer/profile" : "/dashboard/company/profile"}
+                    className="block text-gray-700 hover:text-primary-600"
+                  >
+                    Profile
+                  </Link>
+                )}
                 <button onClick={() => signOut()} className="w-full text-left btn-secondary">
                   Sign Out
                 </button>

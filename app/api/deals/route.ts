@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
       where: {
         OR: [{ companyId: session.user.id }, { influencerId: session.user.id }],
       },
+      include: {
+        influencer: { include: { influencerProfile: true } },
+        company: { include: { companyProfile: true } },
+      },
     });
 
     return NextResponse.json(deals);
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
                 <p><strong>Description:</strong> ${description}</p>
               </div>
               <p>Log in to your InfluMarket account to review and respond to this proposal.</p>
-              <a href="https://influencer-marketplace-seven.vercel.app/login" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
+              <a href="${process.env.NEXTAUTH_URL || 'https://influmarket.in'}/dashboard/influencer" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
                 View Proposal
               </a>
               <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">InfluMarket - Connect Brands with Creators</p>
