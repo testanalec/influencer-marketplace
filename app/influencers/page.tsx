@@ -28,6 +28,8 @@ function buildSocialUrl(platform: string, handle: string): string {
   }
 }
 
+const PAGE_SIZE = 24; // multiple of 4 cols looks clean
+
 interface Filters {
   searchName: string;
   searchNiche: string;
@@ -49,28 +51,56 @@ const DEFAULT_FILTERS: Filters = {
 export default function InfluencersPage() {
   const [influencers, setInfluencers] = useState<InfluencerWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [activeFilters, setActiveFilters] = useState<Filters>(DEFAULT_FILTERS);
+
+  const buildQuery = (f: Filters, off: number) => {
+    const q = new URLSearchParams();
+    if (f.searchNiche) q.append("niche", f.searchNiche);
+    if (f.minFollowers) q.append("minFollowers", f.minFollowers);
+    if (f.searchName.trim()) q.append("name", f.searchName.trim());
+    if (f.searchCountry) q.append("country", f.searchCountry);
+    if (f.searchCity.trim()) q.append("city", f.searchCity.trim());
+    if (f.maxRate) q.append("maxRate", f.maxRate);
+    q.append("limit", String(PAGE_SIZE));
+    q.append("offset", String(off));
+    return q;
+  };
 
   const fetchInfluencers = useCallback(async (f: Filters) => {
     setLoading(true);
+    setOffset(0);
     try {
-      const q = new URLSearchParams();
-      if (f.searchNiche) q.append("niche", f.searchNiche);
-      if (f.minFollowers) q.append("minFollowers", f.minFollowers);
-      if (f.searchName.trim()) q.append("name", f.searchName.trim());
-      if (f.searchCountry) q.append("country", f.searchCountry);
-      if (f.searchCity.trim()) q.append("city", f.searchCity.trim());
-      if (f.maxRate) q.append("maxRate", f.maxRate);
-
-      const r = await fetch(`/api/influencers?${q}`);
+      const r = await fetch(`/api/influencers?${buildQuery(f, 0)}`);
       const data: InfluencerWithUser[] = await r.json();
       setInfluencers(data);
+      setHasMore(data.length === PAGE_SIZE);
+      setActiveFilters(f);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    const newOffset = offset + PAGE_SIZE;
+    try {
+      const r = await fetch(`/api/influencers?${buildQuery(activeFilters, newOffset)}`);
+      const data: InfluencerWithUser[] = await r.json();
+      setInfluencers(prev => [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+      setOffset(newOffset);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     fetchInfluencers(DEFAULT_FILTERS);
@@ -174,7 +204,10 @@ export default function InfluencersPage() {
           </div>
         ) : (
           <>
-            <p className="text-gray-500 text-sm mb-6">{influencers.length} influencer{influencers.length !== 1 ? "s" : ""} found</p>
+            <p className="text-gray-500 text-sm mb-6">
+              Showing {influencers.length} influencer{influencers.length !== 1 ? "s" : ""}
+              {hasMore ? " — scroll down to load more" : ""}
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {influencers.map(inf => {
                 const totalFollowers =
@@ -255,6 +288,17 @@ export default function InfluencersPage() {
                 );
               })}
             </div>
+            {hasMore && (
+              <div className="col-span-full flex justify-center mt-4 mb-2">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-10 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
