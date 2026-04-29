@@ -17,13 +17,43 @@ export async function GET(request: NextRequest) {
       where: {
         OR: [{ companyId: session.user.id }, { influencerId: session.user.id }],
       },
-      include: {
-        influencer: { include: { influencerProfile: true } },
-        company: { include: { companyProfile: true } },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        dealValue: true,
+        commission: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        companyId: true,
+        influencerId: true,
+        influencer: {
+          select: {
+            id: true,
+            email: true,
+            influencerProfile: {
+              select: { id: true, name: true, avatar: true, niche: true, ratePerPost: true },
+            },
+          },
+        },
+        company: {
+          select: {
+            id: true,
+            email: true,
+            companyProfile: {
+              select: { id: true, companyName: true, industry: true },
+            },
+          },
+        },
       },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
     });
 
-    return NextResponse.json(deals);
+    return NextResponse.json(deals, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   } catch (err) {
     console.error("Error fetching deals:", err);
     return NextResponse.json([], { status: 200 });

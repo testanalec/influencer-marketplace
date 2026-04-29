@@ -22,12 +22,22 @@ export async function GET(req: NextRequest) {
 
   const messages = await prisma.dealMessage.findMany({
     where: { dealId },
-    include: {
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      senderId: true,
       sender: {
-        include: { influencerProfile: true, companyProfile: true },
+        select: {
+          id: true,
+          role: true,
+          influencerProfile: { select: { name: true, avatar: true } },
+          companyProfile: { select: { companyName: true } },
+        },
       },
     },
     orderBy: { createdAt: "asc" },
+    take: 200,
   });
 
   return NextResponse.json(messages);
@@ -52,9 +62,18 @@ export async function POST(req: NextRequest) {
 
   const message = await prisma.dealMessage.create({
     data: { dealId, senderId: session.user.id, body: body.trim() },
-    include: {
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      senderId: true,
       sender: {
-        include: { influencerProfile: true, companyProfile: true },
+        select: {
+          id: true,
+          role: true,
+          influencerProfile: { select: { name: true, avatar: true } },
+          companyProfile: { select: { companyName: true } },
+        },
       },
     },
   });

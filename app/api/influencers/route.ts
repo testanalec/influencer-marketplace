@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
     const country = searchParams.get("country");
     const city = searchParams.get("city");
     const includeAll = searchParams.get("includeAll") === "true";
-    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
+    const rawLimit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 50;
+    const limit = Math.min(rawLimit, 200); // cap at 200
+    const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0;
 
     const where: any = {};
 
@@ -74,9 +76,39 @@ export async function GET(request: NextRequest) {
 
     let influencers = await prisma.influencerProfile.findMany({
       where,
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        bio: true,
+        avatar: true,
+        niche: true,
+        country: true,
+        city: true,
+        location: true,
+        status: true,
+        instagram: true,
+        youtube: true,
+        twitter: true,
+        tiktok: true,
+        facebook: true,
+        linkedin: true,
+        instagramFollowers: true,
+        youtubeFollowers: true,
+        twitterFollowers: true,
+        tiktokFollowers: true,
+        facebookFollowers: true,
+        ratePerPost: true,
+        currency: true,
+        phone: true,
+        contactEmail: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { id: true, email: true, role: true, createdAt: true } },
+      },
       orderBy: { createdAt: "desc" },
-      ...(limit ? { take: limit } : {}),
+      take: limit,
+      skip: offset,
     });
 
     if (minFollowers) {
@@ -92,7 +124,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(influencers);
+    return NextResponse.json(influencers, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    });
   } catch (err) {
     console.error("Error fetching influencers:", err);
     return NextResponse.json([], { status: 200 });

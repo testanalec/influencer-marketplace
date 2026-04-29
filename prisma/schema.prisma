@@ -58,6 +58,11 @@ model InfluencerProfile {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([niche])
+  @@index([country])
+  @@index([status, niche])
 }
 
 model CompanyProfile {
@@ -103,6 +108,12 @@ model Deal {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([influencerId])
+  @@index([status])
+  @@index([companyId, status])
+  @@index([influencerId, status])
 }
 
 model DealMessage {
@@ -113,4 +124,7 @@ model DealMessage {
   sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   body      String
   createdAt DateTime @default(now())
+
+  @@index([dealId])
+  @@index([senderId])
 }
