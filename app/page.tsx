@@ -1,4 +1,17 @@
+import { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "InfluMarket — India's #1 Influencer Marketplace",
+  description:
+    "Connect your brand with verified Indian influencers. Discover creators in Fashion, Beauty, Tech, Travel, Fitness & more. Start your campaign today.",
+  openGraph: {
+    title: "InfluMarket — India's #1 Influencer Marketplace",
+    description: "Connect brands with verified influencers across India. Start your campaign today.",
+    url: "https://influmarket.in",
+  },
+  alternates: { canonical: "https://influmarket.in" },
+};
 
 export default function Home() {
   return (

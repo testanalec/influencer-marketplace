@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /influencers
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /onboarding
+
+Sitemap: https://influmarket.in/sitemap.xml
