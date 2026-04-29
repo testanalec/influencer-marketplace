@@ -43,7 +43,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/api/auth/google-redirect" });
+    await signIn("google", { callbackUrl: "/onboarding" });
   };
 
   return (
