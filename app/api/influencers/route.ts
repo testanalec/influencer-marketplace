@@ -6,7 +6,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const niche = searchParams.get("niche");
     const minFollowers = searchParams.get("minFollowers");
+    const maxRate = searchParams.get("maxRate");
     const name = searchParams.get("name");
+    const country = searchParams.get("country");
+    const city = searchParams.get("city");
     const includeAll = searchParams.get("includeAll") === "true";
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
 
@@ -17,11 +20,37 @@ export async function GET(request: NextRequest) {
     }
 
     if (niche && niche !== "") {
-      where.niche = niche;
+      // Case-insensitive niche match
+      where.niche = { equals: niche, mode: "insensitive" };
     }
 
     if (name && name.trim() !== "") {
       where.name = { contains: name.trim(), mode: "insensitive" };
+    }
+
+    if (country && country !== "") {
+      where.OR = [
+        { country: { equals: country, mode: "insensitive" } },
+        { location: { contains: country, mode: "insensitive" } },
+      ];
+    }
+
+    if (city && city.trim() !== "") {
+      const cityConditions = [
+        { city: { contains: city.trim(), mode: "insensitive" } },
+        { location: { contains: city.trim(), mode: "insensitive" } },
+      ];
+      // If we already have OR from country, combine with AND
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: cityConditions }];
+        delete where.OR;
+      } else {
+        where.OR = cityConditions;
+      }
+    }
+
+    if (maxRate && maxRate !== "") {
+      where.ratePerPost = { lte: Number(maxRate) };
     }
 
     let influencers = await prisma.influencerProfile.findMany({

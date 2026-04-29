@@ -58,31 +58,12 @@ export default function InfluencersPage() {
       if (f.searchNiche) q.append("niche", f.searchNiche);
       if (f.minFollowers) q.append("minFollowers", f.minFollowers);
       if (f.searchName.trim()) q.append("name", f.searchName.trim());
+      if (f.searchCountry) q.append("country", f.searchCountry);
+      if (f.searchCity.trim()) q.append("city", f.searchCity.trim());
+      if (f.maxRate) q.append("maxRate", f.maxRate);
 
       const r = await fetch(`/api/influencers?${q}`);
-      let data: InfluencerWithUser[] = await r.json();
-
-      // Client-side filters for country, city, maxRate
-      if (f.searchCountry) {
-        data = data.filter((i: any) => {
-          const country = (i.country || "").toLowerCase();
-          const location = (i.location || "").toLowerCase();
-          const search = f.searchCountry.toLowerCase();
-          return country === search || location.includes(search);
-        });
-      }
-      if (f.searchCity) {
-        data = data.filter((i: any) => {
-          const city = (i.city || "").toLowerCase();
-          const location = (i.location || "").toLowerCase();
-          const search = f.searchCity.toLowerCase().trim();
-          return city.includes(search) || location.includes(search);
-        });
-      }
-      if (f.maxRate) {
-        data = data.filter((i: any) => i.ratePerPost <= Number(f.maxRate));
-      }
-
+      const data: InfluencerWithUser[] = await r.json();
       setInfluencers(data);
     } catch (err) {
       console.error(err);
