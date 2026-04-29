@@ -39,10 +39,24 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
+          // Check if this email is in the ADMIN_EMAILS env var
+          const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+          const isAdminEmail = adminEmails.includes((user.email || "").toLowerCase());
+
           const existing = await prisma.user.findUnique({ where: { email: user.email! } });
           if (!existing) {
             await prisma.user.create({
-              data: { email: user.email!, password: "", role: "PENDING_ONBOARDING" },
+              data: {
+                email: user.email!,
+                password: "",
+                role: isAdminEmail ? "ADMIN" : "PENDING_ONBOARDING",
+              },
+            });
+          } else if (isAdminEmail && existing.role !== "ADMIN") {
+            // Promote existing user to admin if their email is in the admin list
+            await prisma.user.update({
+              where: { email: user.email! },
+              data: { role: "ADMIN" },
             });
           }
         } catch (err) {
