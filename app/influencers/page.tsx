@@ -28,7 +28,7 @@ function buildSocialUrl(platform: string, handle: string): string {
   }
 }
 
-const PAGE_SIZE = 24; // multiple of 4 cols looks clean
+const PAGE_SIZE = 100;
 
 interface Filters {
   searchName: string;
@@ -289,13 +289,13 @@ export default function InfluencersPage() {
               })}
             </div>
             {hasMore && (
-              <div className="col-span-full flex justify-center mt-4 mb-2">
+              <div className="flex justify-center mt-10 mb-4">
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-10 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
+                  className="px-12 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 text-base"
                 >
-                  {loadingMore ? "Loading..." : "Load More"}
+                  {loadingMore ? "Loading..." : "Load More Influencers"}
                 </button>
               </div>
             )}
