@@ -30,9 +30,11 @@ model InfluencerProfile {
 
   name   String
   bio    String
-  avatar String?
-  niche  String
-  phone  String?
+  avatar  String?
+  country String?
+  city    String?
+  niche   String
+  phone   String?
 
   status String @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
 

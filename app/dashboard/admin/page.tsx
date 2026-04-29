@@ -58,7 +58,11 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"overview"|"influencers"|"brands"|"deals"|"sync">("overview");
+  const [activeTab, setActiveTab] = useState<"overview"|"influencers"|"brands"|"deals"|"sync"|"create">("overview");
+  // Create user form
+  const [createForm, setCreateForm] = useState({ name: "", email: "", password: "", role: "INFLUENCER" });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createResult, setCreateResult] = useState<{ error?: string; message?: string } | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -219,11 +223,12 @@ export default function AdminDashboard() {
   const totalFollowers = influencers.reduce((s, i) => s + (i.instagramFollowers||0) + (i.youtubeFollowers||0) + (i.tiktokFollowers||0), 0);
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: "\u{1F4CA}" },
-    { id: "influencers", label: "Influencers", icon: "\u{1F465}", badge: pending.length > 0 ? pending.length : undefined },
-    { id: "brands", label: "Brands", icon: "\u{1F3E2}" },
-    { id: "deals", label: "Deals", icon: "\u{1F91D}" },
-    { id: "sync", label: "Sync", icon: "\u{1F504}" },
+    { id: "overview", label: "Overview", icon: "📊" },
+    { id: "influencers", label: "Influencers", icon: "👥", badge: pending.length > 0 ? pending.length : undefined },
+    { id: "brands", label: "Brands", icon: "🏢" },
+    { id: "deals", label: "Deals", icon: "🤝" },
+    { id: "sync", label: "Sync", icon: "🔄" },
+    { id: "create", label: "Create User", icon: "➕" },
   ];
 
   return (
@@ -258,14 +263,14 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Dashboard Overview</h1>
               <p className="text-gray-500 text-sm mb-6">Platform health at a glance</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard label="Total Influencers" value={influencers.length} icon="\u{1F465}" color="bg-purple-100" />
-                <StatCard label="Approved" value={approved.length} icon="\u2705" color="bg-green-100" />
-                <StatCard label="Pending Approval" value={pending.length} icon="\u23F3" color="bg-yellow-100" />
-                <StatCard label="Total Brands" value={companies.length} icon="\u{1F3E2}" color="bg-blue-100" />
-                <StatCard label="Total Deals" value={deals.length} icon="\u{1F91D}" color="bg-pink-100" />
-                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="\u{1F4F1}" color="bg-orange-100" />
-                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="\u{1F680}" color="bg-indigo-100" />
-                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="\u{1F3C6}" color="bg-emerald-100" />
+                <StatCard label="Total Influencers" value={influencers.length} icon="👥" color="bg-purple-100" />
+                <StatCard label="Approved" value={approved.length} icon="✅" color="bg-green-100" />
+                <StatCard label="Pending Approval" value={pending.length} icon="⏳" color="bg-yellow-100" />
+                <StatCard label="Total Brands" value={companies.length} icon="🏢" color="bg-blue-100" />
+                <StatCard label="Total Deals" value={deals.length} icon="🤝" color="bg-pink-100" />
+                <StatCard label="Total Followers" value={totalFollowers >= 1000000 ? `${(totalFollowers/1000000).toFixed(1)}M` : `${(totalFollowers/1000).toFixed(0)}K`} icon="📱" color="bg-orange-100" />
+                <StatCard label="Active Deals" value={deals.filter(d=>d.status==="ACCEPTED").length} icon="🚀" color="bg-indigo-100" />
+                <StatCard label="Completed Deals" value={deals.filter(d=>d.status==="COMPLETED").length} icon="🏆" color="bg-emerald-100" />
               </div>
 
               {/* Niche breakdown */}
@@ -287,7 +292,7 @@ export default function AdminDashboard() {
               {pending.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-gray-900">\u23F3 Pending Approvals ({pending.length})</h2>
+                    <h2 className="font-bold text-gray-900">⏳ Pending Approvals ({pending.length})</h2>
                     <button onClick={() => setActiveTab("influencers")} className="text-sm text-purple-600 hover:underline">View all →</button>
                   </div>
                   <div className="space-y-2">
@@ -325,11 +330,11 @@ export default function AdminDashboard() {
                     <>
                       <button onClick={() => handleBulkAction("APPROVED")} className="bg-green-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-green-700">✓ Approve ({selectedIds.size})</button>
                       <button onClick={() => handleBulkAction("REJECTED")} className="bg-yellow-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-yellow-600">✗ Reject ({selectedIds.size})</button>
-                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">\u{1F5D1} Delete ({selectedIds.size})</button>
+                      <button onClick={() => handleBulkAction("DELETE")} className="bg-red-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-700">🗑 Delete ({selectedIds.size})</button>
                     </>
                   )}
                   <button onClick={handleExport} className="bg-purple-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
-                    \u2B07 Export CSV
+                    ⬇ Export CSV
                   </button>
                 </div>
               </div>
@@ -412,9 +417,9 @@ export default function AdminDashboard() {
                             <td className="py-3 px-4 text-gray-600">₹{inf.ratePerPost?.toLocaleString() || "—"}</td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
-                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">\u{1F4F8}</span>}
-                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">\u25B6\uFE0F</span>}
-                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">\u{1F3B5}</span>}
+                                {inf.instagram && <span title={`@${inf.instagram}`} className="text-pink-500 text-sm">📸</span>}
+                                {inf.youtube && <span title={inf.youtube} className="text-red-500 text-sm">▶️</span>}
+                                {inf.tiktok && <span title={`@${inf.tiktok}`} className="text-gray-700 text-sm">🎵</span>}
                                 {inf.twitter && <span title={`@${inf.twitter}`} className="text-blue-400 text-sm">𝕏</span>}
                               </div>
                             </td>
@@ -427,7 +432,7 @@ export default function AdminDashboard() {
                                 {inf.status !== "REJECTED" && (
                                   <button onClick={() => handleApprove(inf.userId, "REJECTED")} className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="Reject">✗</button>
                                 )}
-                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">\u{1F5D1}</button>
+                                <button onClick={() => handleDelete(inf.userId)} className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Delete">🗑</button>
                               </div>
                             </td>
                           </tr>
@@ -540,12 +545,77 @@ export default function AdminDashboard() {
           )}
 
           {/* SYNC TAB */}
+          {activeTab === "create" && (
+            <div className="max-w-xl">
+              <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New User</h1>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <p className="text-sm text-gray-500 mb-6">Create an account for any role — Admin, Influencer, Brand, or basic user. The user can log in immediately with the credentials you set.</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Name / Company Name</label>
+                    <input type="text" value={createForm.name} onChange={e => setCreateForm({...createForm, name: e.target.value})}
+                      placeholder="e.g. Rahul Mittal" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" value={createForm.email} onChange={e => setCreateForm({...createForm, email: e.target.value})}
+                      placeholder="user@example.com" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" value={createForm.password} onChange={e => setCreateForm({...createForm, password: e.target.value})}
+                      placeholder="Min 8 characters" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                    <select value={createForm.role} onChange={e => setCreateForm({...createForm, role: e.target.value})}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                      <option value="INFLUENCER">Influencer — Can receive brand proposals</option>
+                      <option value="COMPANY">Brand — Can search &amp; send proposals</option>
+                      <option value="ADMIN">Admin — Full platform access</option>
+                      <option value="PENDING_ONBOARDING">Basic User — Must complete onboarding</option>
+                    </select>
+                  </div>
+                  {createResult && (
+                    <div className={`p-3 rounded-lg text-sm ${createResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+                      {createResult.error || createResult.message}
+                    </div>
+                  )}
+                  <button
+                    disabled={createLoading || !createForm.email || !createForm.password || !createForm.name}
+                    onClick={async () => {
+                      setCreateLoading(true); setCreateResult(null);
+                      try {
+                        const r = await fetch("/api/admin/create", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(createForm),
+                        });
+                        const data = await r.json();
+                        if (r.ok) {
+                          setCreateResult({ message: `User created successfully! They can log in at influmarket.in/login` });
+                          setCreateForm({ name: "", email: "", password: "", role: "INFLUENCER" });
+                          fetchAll();
+                        } else {
+                          setCreateResult({ error: data.error || "Failed to create user" });
+                        }
+                      } catch { setCreateResult({ error: "Network error" }); }
+                      finally { setCreateLoading(false); }
+                    }}
+                    className="w-full bg-purple-600 text-white font-semibold py-2.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm">
+                    {createLoading ? "Creating..." : "Create User"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "sync" && (
             <div className="space-y-6">
               <h1 className="text-2xl font-bold text-gray-900">Data Sync</h1>
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">\u25B6\uFE0F</div>
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">▶️</div>
                   <div><h2 className="font-bold text-gray-900">YouTube Influencer Sync</h2><p className="text-sm text-gray-500">Auto-fetch Indian YouTube influencers by niche</p></div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 mb-4">
@@ -565,14 +635,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSync} disabled={syncing} className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {syncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>\u{1F504} Sync YouTube</>}
+                  {syncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>🔄 Sync YouTube</>}
                 </button>
-                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `\u274C ${syncResult.error}` : `\u2705 ${syncResult.message}`}</div>}
+                {syncResult && <div className={`mt-3 p-3 rounded-lg text-sm ${syncResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{syncResult.error ? `❌ ${syncResult.error}` : `✅ ${syncResult.message}`}</div>}
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">\u{1F4F1}</div>
+                  <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-xl">📱</div>
                   <div><h2 className="font-bold text-gray-900">Instagram & Facebook Sync</h2><p className="text-sm text-gray-500">Update follower counts for influencers with handles set</p></div>
                 </div>
                 <div className="flex items-end gap-4 mb-4">
@@ -582,9 +652,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <button onClick={handleSocialSync} disabled={socialSyncing} className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-5 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-60">
-                  {socialSyncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>\u{1F4F2} Sync Instagram & Facebook</>}
+                  {socialSyncing ? <><span className="animate-spin inline-block">⟳</span> Syncing...</> : <>📲 Sync Instagram & Facebook</>}
                 </button>
-                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `\u274C ${socialResult.error}` : `\u2705 ${socialResult.message}`}</div>}
+                {socialResult && <div className={`mt-3 p-3 rounded-lg text-sm ${socialResult.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{socialResult.error ? `❌ ${socialResult.error}` : `✅ ${socialResult.message}`}</div>}
               </div>
             </div>
           )}

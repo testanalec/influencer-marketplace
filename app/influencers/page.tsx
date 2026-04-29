@@ -2,132 +2,186 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { InfluencerCard } from "@/components/InfluencerCard";
 import { InfluencerWithUser } from "@/types";
+
+const NICHES = ["","Fashion","Beauty","Tech","Food","Travel","Fitness","Lifestyle","Entertainment","Education","Business","Sports","Gaming","Other"];
+const COUNTRIES = ["","India","United States","United Kingdom","Canada","Australia","UAE","Singapore","Germany","France","Brazil"];
+
+function formatFollowers(n: number) {
+  if (!n) return "0";
+  if (n >= 1000000) return `${(n/1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n/1000).toFixed(0)}K`;
+  return String(n);
+}
 
 export default function InfluencersPage() {
   const [influencers, setInfluencers] = useState<InfluencerWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchNiche, setSearchNiche] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchCountry, setSearchCountry] = useState("");
+  const [searchCity, setSearchCity] = useState("");
+  const [maxRate, setMaxRate] = useState("");
   const [minFollowers, setMinFollowers] = useState("");
 
-  useEffect(() => {
-    fetchInfluencers();
-  }, []);
+  useEffect(() => { fetchInfluencers(); }, []);
 
-  const fetchInfluencers = async () => {
+  const fetchInfluencers = async (overrides?: any) => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams();
-      if (searchNiche) queryParams.append("niche", searchNiche);
-      if (minFollowers) queryParams.append("minFollowers", minFollowers);
-
-      const response = await fetch(
-        `/api/influencers?${queryParams.toString()}`
-      );
-      const data = await response.json();
+      const vals = { searchNiche, searchName, minFollowers, searchCountry, searchCity, maxRate, ...overrides };
+      const q = new URLSearchParams();
+      if (vals.searchNiche) q.append("niche", vals.searchNiche);
+      if (vals.minFollowers) q.append("minFollowers", vals.minFollowers);
+      if (vals.searchName) q.append("name", vals.searchName);
+      const r = await fetch(`/api/influencers?${q}`);
+      let data: InfluencerWithUser[] = await r.json();
+      if (vals.searchCountry) data = data.filter((i: any) => i.country === vals.searchCountry || (i.location || "").toLowerCase().includes(vals.searchCountry.toLowerCase()));
+      if (vals.searchCity) data = data.filter((i: any) => i.city === vals.searchCity || (i.location || "").toLowerCase().includes(vals.searchCity.toLowerCase()));
+      if (vals.maxRate) data = data.filter((i: any) => i.ratePerPost <= Number(vals.maxRate));
       setInfluencers(data);
     } catch (err) {
-      console.error("Failed to fetch influencers:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchInfluencers();
+  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); fetchInfluencers(); };
+  const handleReset = () => {
+    setSearchNiche(""); setSearchName(""); setSearchCountry(""); setSearchCity(""); setMaxRate(""); setMinFollowers("");
+    fetchInfluencers({ searchNiche:"", searchName:"", searchCountry:"", searchCity:"", maxRate:"", minFollowers:"" });
   };
 
-  const niches = [
-    "Fashion",
-    "Beauty",
-    "Tech",
-    "Food",
-    "Travel",
-    "Fitness",
-    "Lifestyle",
-    "Entertainment",
-    "Education",
-    "Business",
-    "Sports",
-    "Gaming",
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 py-10">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-4">Browse Influencers</h1>
-          <p className="text-gray-600 text-lg">
-            Discover amazing creators across different niches
-          </p>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Browse Influencers</h1>
+          <p className="text-gray-500">Discover verified creators across India and beyond</p>
         </div>
 
-        {/* Search Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label">Niche</label>
-                <select
-                  value={searchNiche}
-                  onChange={(e) => setSearchNiche(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">All Niches</option>
-                  {niches.map((niche) => (
-                    <option key={niche} value={niche}>
-                      {niche}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="form-label">Min Followers</label>
-                <select
-                  value={minFollowers}
-                  onChange={(e) => setMinFollowers(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Any</option>
-                  <option value="10000">10K+</option>
-                  <option value="50000">50K+</option>
-                  <option value="100000">100K+</option>
-                  <option value="500000">500K+</option>
-                  <option value="1000000">1M+</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button type="submit" className="btn-primary w-full">
-                  Search
-                </button>
-              </div>
+        {/* Filters */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+          <form onSubmit={handleSearch}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+              <input type="text" placeholder="Search by name..." value={searchName}
+                onChange={e => setSearchName(e.target.value)} className="input-field col-span-2 lg:col-span-1" />
+              <select value={searchNiche} onChange={e => setSearchNiche(e.target.value)} className="input-field">
+                <option value="">All Niches</option>
+                {NICHES.filter(Boolean).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <select value={searchCountry} onChange={e => setSearchCountry(e.target.value)} className="input-field">
+                <option value="">All Countries</option>
+                {COUNTRIES.filter(Boolean).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="text" placeholder="City..." value={searchCity}
+                onChange={e => setSearchCity(e.target.value)} className="input-field" />
+              <select value={minFollowers} onChange={e => setMinFollowers(e.target.value)} className="input-field">
+                <option value="">Any Followers</option>
+                <option value="1000">1K+</option>
+                <option value="10000">10K+</option>
+                <option value="50000">50K+</option>
+                <option value="100000">100K+</option>
+                <option value="500000">500K+</option>
+                <option value="1000000">1M+</option>
+              </select>
+              <select value={maxRate} onChange={e => setMaxRate(e.target.value)} className="input-field">
+                <option value="">Any Rate</option>
+                <option value="1000">Up to ₹1K</option>
+                <option value="5000">Up to ₹5K</option>
+                <option value="10000">Up to ₹10K</option>
+                <option value="25000">Up to ₹25K</option>
+                <option value="50000">Up to ₹50K</option>
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" className="btn-primary px-8">Search</button>
+              <button type="button" onClick={handleReset} className="px-5 py-2 border border-gray-300 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Reset</button>
             </div>
           </form>
         </div>
 
-        {/* Loading State */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading influencers...</p>
-          </div>
+          <div className="text-center py-16 text-gray-400">Loading influencers...</div>
         ) : influencers.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No influencers found</p>
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-lg mb-2">No influencers found</p>
+            <p className="text-sm">Try different filters</p>
           </div>
         ) : (
           <>
-            <p className="text-gray-600 mb-6">
-              Found {influencers.length} influencer{influencers.length !== 1 ? "s" : ""}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {influencers.map((influencer) => (
-                <Link key={influencer.id} href={`/influencers/${influencer.id}`}>
-                  <InfluencerCard influencer={influencer} />
-                </Link>
-              ))}
+            <p className="text-gray-500 text-sm mb-6">{influencers.length} influencer{influencers.length !== 1 ? "s" : ""} found</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {influencers.map(inf => {
+                const totalFollowers = ((inf as any).instagramFollowers||0)+((inf as any).youtubeFollowers||0)+((inf as any).tiktokFollowers||0)+((inf as any).twitterFollowers||0);
+                const socialLink = (base: string, handle: string) => handle.startsWith("http") ? handle : `${base}/${handle.replace("@","")}`;
+                return (
+                  <div key={inf.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col" style={{height: "360px"}}>
+                    {/* Top */}
+                    <div className="p-5 flex flex-col items-center text-center border-b border-gray-50">
+                      <div className="w-18 h-18 rounded-full mb-3 overflow-hidden bg-purple-100 flex items-center justify-center font-bold text-purple-600 flex-shrink-0" style={{width:72,height:72,fontSize:28}}>
+                        {(inf as any).avatar ? <img src={(inf as any).avatar} alt={inf.name} className="w-full h-full object-cover" /> : inf.name?.charAt(0)}
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-1">{inf.name}</h3>
+                      <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{inf.niche}</span>
+                      {((inf as any).city || (inf as any).country || inf.location) && (
+                        <p className="text-xs text-gray-400 mt-1">📍 {[(inf as any).city, (inf as any).country].filter(Boolean).join(", ") || inf.location}</p>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="px-5 py-3 flex-1">
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-gray-500">Rate / Post</span>
+                        <span className="font-bold text-purple-600">₹{inf.ratePerPost?.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-500">Followers</span>
+                        <span className="font-bold">{formatFollowers(totalFollowers)}</span>
+                      </div>
+                      {/* Social links — clickable */}
+                      <div className="flex gap-1 flex-wrap">
+                        {(inf as any).instagram && (
+                          <a href={socialLink("https://instagram.com", (inf as any).instagram)} target="_blank" rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-xs bg-pink-50 text-pink-600 border border-pink-100 px-2 py-0.5 rounded-full hover:bg-pink-100">
+                            Instagram
+                          </a>
+                        )}
+                        {(inf as any).youtube && (
+                          <a href={socialLink("https://youtube.com/@", (inf as any).youtube)} target="_blank" rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-xs bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded-full hover:bg-red-100">
+                            YouTube
+                          </a>
+                        )}
+                        {(inf as any).tiktok && (
+                          <a href={socialLink("https://tiktok.com/@", (inf as any).tiktok)} target="_blank" rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-xs bg-gray-50 text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-100">
+                            TikTok
+                          </a>
+                        )}
+                        {(inf as any).twitter && (
+                          <a href={socialLink("https://x.com/", (inf as any).twitter)} target="_blank" rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100">
+                            X/Twitter
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* CTA */}
+                    <div className="px-5 pb-4">
+                      <Link href={`/influencers/${inf.id}`} className="block w-full text-center btn-primary text-sm py-2 rounded-xl">
+                        View Profile
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
