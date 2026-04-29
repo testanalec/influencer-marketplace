@@ -33,12 +33,13 @@ export async function GET(request: NextRequest) {
 
     if (minFollowers) {
       const minFollowersNum = parseInt(minFollowers);
-      influencers = influencers.filter((inf) => {
+      influencers = influencers.filter((inf: any) => {
         const totalFollowers =
           (inf.instagramFollowers || 0) +
           (inf.youtubeFollowers || 0) +
           (inf.tiktokFollowers || 0) +
-          (inf.twitterFollowers || 0);
+          (inf.twitterFollowers || 0) +
+          (inf.facebookFollowers || 0);
         return totalFollowers >= minFollowersNum;
       });
     }

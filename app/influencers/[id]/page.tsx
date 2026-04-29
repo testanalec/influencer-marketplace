@@ -17,6 +17,22 @@ function formatFollowers(count: number): string {
   return count.toString();
 }
 
+function buildSocialUrl(platform: string, handle: string): string {
+  if (!handle) return "";
+  const h = handle.trim();
+  if (h.startsWith("http://") || h.startsWith("https://")) return h;
+  const clean = h.replace(/^@/, "");
+  switch (platform) {
+    case "youtube":   return `https://youtube.com/@${clean}`;
+    case "instagram": return `https://instagram.com/${clean}`;
+    case "tiktok":    return `https://tiktok.com/@${clean}`;
+    case "twitter":   return `https://x.com/${clean}`;
+    case "facebook":  return `https://facebook.com/${clean}`;
+    case "linkedin":  return `https://linkedin.com/in/${clean}`;
+    default:          return h;
+  }
+}
+
 export default function InfluencerProfilePage({
   params,
 }: {
@@ -116,7 +132,7 @@ export default function InfluencerProfilePage({
       key: "youtube",
       label: "YouTube",
       icon: "▶️",
-      url: influencer.youtube,
+      handle: influencer.youtube,
       followers: influencer.youtubeFollowers,
       color: "#FF0000",
     },
@@ -124,7 +140,7 @@ export default function InfluencerProfilePage({
       key: "instagram",
       label: "Instagram",
       icon: "📸",
-      url: influencer.instagram,
+      handle: influencer.instagram,
       followers: influencer.instagramFollowers,
       color: "#E1306C",
     },
@@ -132,7 +148,7 @@ export default function InfluencerProfilePage({
       key: "facebook",
       label: "Facebook",
       icon: "👤",
-      url: (influencer as any).facebook,
+      handle: (influencer as any).facebook,
       followers: (influencer as any).facebookFollowers,
       color: "#1877F2",
     },
@@ -140,7 +156,7 @@ export default function InfluencerProfilePage({
       key: "tiktok",
       label: "TikTok",
       icon: "🎵",
-      url: influencer.tiktok,
+      handle: influencer.tiktok,
       followers: influencer.tiktokFollowers,
       color: "#000000",
     },
@@ -148,11 +164,21 @@ export default function InfluencerProfilePage({
       key: "twitter",
       label: "Twitter / X",
       icon: "🐦",
-      url: influencer.twitter,
+      handle: influencer.twitter,
       followers: influencer.twitterFollowers,
       color: "#1DA1F2",
     },
-  ].filter((p) => p.url);
+    {
+      key: "linkedin",
+      label: "LinkedIn",
+      icon: "💼",
+      handle: (influencer as any).linkedin,
+      followers: null,
+      color: "#0A66C2",
+    },
+  ]
+    .filter((p) => p.handle)
+    .map((p) => ({ ...p, url: buildSocialUrl(p.key, p.handle!) }));
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -238,7 +264,7 @@ export default function InfluencerProfilePage({
                       )}
                     </div>
                     <a
-                      href={platform.url!}
+                      href={platform.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 underline text-sm break-all"
