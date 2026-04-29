@@ -1,6 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+// Map full country names to their common codes stored in legacy location field
+const COUNTRY_CODES: Record<string, string[]> = {
+  "india": ["IN", "India"],
+  "united states": ["US", "USA", "United States"],
+  "united kingdom": ["UK", "GB", "United Kingdom"],
+  "canada": ["CA", "Canada"],
+  "australia": ["AU", "Australia"],
+  "uae": ["AE", "UAE"],
+  "singapore": ["SG", "Singapore"],
+  "germany": ["DE", "Germany"],
+  "france": ["FR", "France"],
+  "brazil": ["BR", "Brazil"],
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -29,9 +43,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (country && country !== "") {
+      // Build OR conditions: match country field, or location containing any alias (e.g. "IN", "India")
+      const aliases = COUNTRY_CODES[country.toLowerCase()] || [country];
+      const locationConditions = aliases.map((alias: string) => ({
+        location: { contains: alias, mode: "insensitive" as const },
+      }));
       where.OR = [
         { country: { equals: country, mode: "insensitive" } },
-        { location: { contains: country, mode: "insensitive" } },
+        ...locationConditions,
       ];
     }
 
