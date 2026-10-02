@@ -97,7 +97,7 @@ export default function AdminDashboard() {
     try {
       const [statsR, infR, compR, dealsR] = await Promise.all([
         fetch("/api/admin/stats"),
-        fetch("/api/influencers?limit=2000&includeAll=true"),
+        fetch("/api/admin/influencers", { cache: "no-store" }),
         fetch("/api/admin/companies"),
         fetch("/api/admin/deals"),
       ]);
