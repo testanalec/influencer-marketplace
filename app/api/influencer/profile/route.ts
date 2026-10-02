@@ -9,7 +9,7 @@ export async function GET() {
 
   const profile = await prisma.influencerProfile.findUnique({
     where: { userId: session.user.id },
-    include: { user: { select: { email: true, name: true } } },
+    include: { user: { select: { email: true } } }, // User has no `name` column; selecting it crashed this endpoint
   });
 
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
@@ -60,6 +60,7 @@ export async function PATCH(req: NextRequest) {
   };
 
   let profile;
+  try {
   if (!existing) {
     profile = await prisma.influencerProfile.create({
       data: {
@@ -81,6 +82,10 @@ export async function PATCH(req: NextRequest) {
       data,
       include: { user: { select: { email: true } } },
     });
+  }
+  } catch (err: any) {
+    console.error("[influencer/profile] save failed:", err?.code, err?.message);
+    return NextResponse.json({ error: "Couldn't save profile", code: err?.code || null }, { status: 500 });
   }
 
   return NextResponse.json(profile);
