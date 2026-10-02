@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
+import { resizeImageFile } from "@/lib/resizeImage";
 
 function InfluencerRegisterForm() {
   const { data: session, update } = useSession();
@@ -28,6 +29,24 @@ function InfluencerRegisterForm() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarLoading(true);
+    try {
+      setAvatar(await resizeImageFile(file));
+      setError("");
+    } catch {
+      setError("Couldn't read that photo. Please choose a JPG or PNG image.");
+    } finally {
+      setAvatarLoading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     if (isGoogle && session?.user) {
@@ -47,6 +66,10 @@ function InfluencerRegisterForm() {
     if (step === 1) {
       if (!formData.name || !formData.email) {
         setError("Name and email are required.");
+        return;
+      }
+      if (!avatar) {
+        setError("Please add a profile photo. Brands see it on your creator card.");
         return;
       }
       if (!isGoogle && (!formData.password || formData.password !== formData.confirmPassword)) {
@@ -76,6 +99,7 @@ function InfluencerRegisterForm() {
         youtubeFollowers: formData.youtubeFollowers,
         tiktokFollowers: formData.tiktokFollowers,
         ratePerPost: formData.ratePerPost,
+        avatar,
         role: "INFLUENCER",
       };
       if (!isGoogle) {
@@ -136,6 +160,28 @@ function InfluencerRegisterForm() {
             {step === 1 && (
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-700">Account Details</h2>
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50 hover:border-primary-500 shrink-0"
+                    aria-label="Upload profile photo"
+                  >
+                    {avatar ? (
+                      <img src={avatar} alt="Your profile photo" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl text-gray-400">{avatarLoading ? "…" : "+"}</span>
+                    )}
+                  </button>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Profile Photo *</p>
+                    <p className="text-xs text-gray-500">A clear photo of you. Brands see this on your creator card.</p>
+                    <button type="button" onClick={() => fileRef.current?.click()} className="text-sm text-primary-600 font-medium mt-1">
+                      {avatar ? "Change photo" : "Upload photo"}
+                    </button>
+                  </div>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                   <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
