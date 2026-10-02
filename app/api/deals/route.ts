@@ -2,9 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { Resend } from "resend";
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { sendEmail, layout, esc, BASE_URL } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,7 +75,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const commission = dealValue * 0.1;
+    const amount = Number(dealValue);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ error: "Deal value must be a positive number" }, { status: 400 });
+    }
+    const target = await prisma.influencerProfile.findUnique({ where: { userId: influencerId }, select: { status: true } });
+    if (!target || target.status !== "APPROVED") {
+      return NextResponse.json({ error: "This creator is not available for proposals" }, { status: 400 });
+    }
+
+    const commission = amount * 0.1;
 
     const deal = await prisma.deal.create({
       data: {
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
         influencerId,
         title,
         description,
-        dealValue,
+        dealValue: amount,
         commission,
         status: "PENDING",
       },
@@ -109,29 +116,20 @@ export async function POST(request: NextRequest) {
 
       const companyName = companyUser?.companyProfile?.companyName || session.user.name || "A brand";
 
-      if (influencerEmail && resend) {
-        await resend.emails.send({
-          from: "InfluMarket <notifications@influmarketplace.com>",
-          to: influencerEmail,
-          subject: `New Collaboration Proposal: ${title}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #7c3aed;">🎉 You have a new collaboration proposal!</h2>
-              <p>Hi ${influencerUser?.influencerProfile?.name || "there"},</p>
-              <p><strong>${companyName}</strong> has sent you a collaboration proposal on InfluMarket.</p>
-              <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p><strong>Campaign:</strong> ${title}</p>
-                <p><strong>Deal Value:</strong> ₹${dealValue.toLocaleString()}</p>
-                <p><strong>Description:</strong> ${description}</p>
-              </div>
-              <p>Log in to your InfluMarket account to review and respond to this proposal.</p>
-              <a href="${process.env.NEXTAUTH_URL || 'https://influmarket.in'}/dashboard/influencer" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
-                View Proposal
-              </a>
-              <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">InfluMarket - Connect Brands with Creators</p>
-            </div>
-          `,
-        });
+      if (influencerEmail) {
+        const html = layout(
+          "🎉 You have a new collaboration proposal!",
+          `<p>Hi ${esc(influencerUser?.influencerProfile?.name || "there")},</p>
+           <p><strong>${esc(companyName)}</strong> has sent you a collaboration proposal on InfluMarket.</p>
+           <div style="background:#f3f4f6;padding:16px;border-radius:8px;margin:16px 0;">
+             <p><strong>Campaign:</strong> ${esc(title)}</p>
+             <p><strong>Deal Value:</strong> ₹${esc(Number(dealValue).toLocaleString("en-IN"))}</p>
+             <p><strong>Description:</strong> ${esc(description)}</p>
+           </div>
+           <p>Log in to review and respond to this proposal.</p>`,
+          { label: "View Proposal", href: `${BASE_URL}/dashboard/influencer` }
+        );
+        await sendEmail({ to: influencerEmail, subject: `New Collaboration Proposal: ${title}`, html });
       }
     } catch (emailErr) {
       console.error("Failed to send email notification:", emailErr);
