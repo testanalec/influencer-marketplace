@@ -11,8 +11,10 @@ export async function GET() {
 
   const deals = await prisma.deal.findMany({
     include: {
-      company: { select: { companyName: true, user: { select: { email: true } } } },
-      influencer: { select: { name: true, user: { select: { email: true } } } },
+      // company / influencer are User records; names live on their profiles.
+      // (The old select asked User for companyName/name, which crashed this endpoint.)
+      company: { select: { email: true, companyProfile: { select: { companyName: true } } } },
+      influencer: { select: { email: true, influencerProfile: { select: { name: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });
