@@ -46,16 +46,43 @@ export default function InfluencerProfile() {
     setForm((prev: any) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Shrink the photo in the browser before saving. Phone photos (3-10 MB) were
+  // larger than Vercel's 4.5 MB request limit, so saving silently failed.
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file (JPG or PNG).");
+      return;
+    }
     setAvatarUploading(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((prev: any) => ({ ...prev, avatar: reader.result as string }));
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = dataUrl;
+      });
+      const MAX = 400;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const small = canvas.toDataURL("image/jpeg", 0.85);
+      setForm((prev: any) => ({ ...prev, avatar: small }));
+    } catch {
+      alert("Couldn't read that photo. Please try a different JPG or PNG.");
+    } finally {
       setAvatarUploading(false);
-    };
-    reader.readAsDataURL(file);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   const handleSave = async () => {
@@ -72,6 +99,10 @@ export default function InfluencerProfile() {
       setEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } else {
+      // Previously failures were silent, so changes looked saved but weren't.
+      const msg = r.status === 413 ? "Photo is too large. Please choose a smaller one." : "Couldn't save your profile. Please try again.";
+      alert(msg);
     }
     setSaving(false);
   };

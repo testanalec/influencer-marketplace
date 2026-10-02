@@ -9,7 +9,7 @@ export async function GET() {
 
   const profile = await prisma.companyProfile.findUnique({
     where: { userId: session.user.id },
-    include: { user: { select: { email: true, name: true } } },
+    include: { user: { select: { email: true } } }, // User has no `name` column
   });
 
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
