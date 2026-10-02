@@ -2,10 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { Resend } from "resend";
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const BASE_URL = process.env.NEXTAUTH_URL || "https://influmarket.in";
+import { sendEmail, esc, BASE_URL as EMAIL_BASE_URL } from "@/lib/email";
+const BASE_URL = EMAIL_BASE_URL;
 
 export async function PATCH(
   request: NextRequest,
@@ -18,8 +16,8 @@ export async function PATCH(
     }
 
     const { status } = await request.json();
-    if (!status) {
-      return NextResponse.json({ error: "Status is required" }, { status: 400 });
+    if (!["ACCEPTED", "REJECTED", "COMPLETED"].includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     const deal = await prisma.deal.findUnique({
@@ -68,7 +66,7 @@ export async function PATCH(
 
     // Send email notifications on status changes
     try {
-      if (resend) {
+      {
         const influencerName = deal.influencer.influencerProfile?.name || "the influencer";
         const companyName = deal.company.companyProfile?.companyName || "the brand";
         const companyEmail = deal.company.email?.includes("@youtube-sync.internal") ? null : deal.company.email;
@@ -76,19 +74,18 @@ export async function PATCH(
           (deal.influencer.email?.includes("@youtube-sync.internal") ? null : deal.influencer.email);
 
         if (status === "ACCEPTED" && companyEmail) {
-          await resend.emails.send({
-            from: "InfluMarket <noreply@influmarket.in>",
+          await sendEmail({
             to: companyEmail,
             subject: `✅ ${influencerName} accepted your proposal: ${deal.title}`,
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #16a34a;">Great news! Proposal Accepted</h2>
-                <p>Hi ${companyName},</p>
-                <p><strong>${influencerName}</strong> has accepted your collaboration proposal <strong>"${deal.title}"</strong>.</p>
+                <p>Hi ${esc(companyName)},</p>
+                <p><strong>${esc(influencerName)}</strong> has accepted your collaboration proposal <strong>"${esc(deal.title)}"</strong>.</p>
                 <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; margin: 16px 0;">
                   <p><strong>Deal Value:</strong> ₹${deal.dealValue.toLocaleString()}</p>
                 </div>
-                <p>You can now message ${influencerName} directly through the platform to coordinate next steps.</p>
+                <p>You can now message ${esc(influencerName)} directly through the platform to coordinate next steps.</p>
                 <a href="${BASE_URL}/dashboard/company" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin-top: 8px;">
                   View Dashboard
                 </a>
@@ -98,15 +95,14 @@ export async function PATCH(
         }
 
         if (status === "REJECTED" && companyEmail) {
-          await resend.emails.send({
-            from: "InfluMarket <noreply@influmarket.in>",
+          await sendEmail({
             to: companyEmail,
             subject: `Proposal update: ${deal.title}`,
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #dc2626;">Proposal Not Accepted</h2>
-                <p>Hi ${companyName},</p>
-                <p><strong>${influencerName}</strong> was unable to take on your collaboration proposal <strong>"${deal.title}"</strong> at this time.</p>
+                <p>Hi ${esc(companyName)},</p>
+                <p><strong>${esc(influencerName)}</strong> was unable to take on your collaboration proposal <strong>"${esc(deal.title)}"</strong> at this time.</p>
                 <p>Don't be discouraged — there are thousands of great creators on InfluMarket. Browse others who might be a great fit.</p>
                 <a href="${BASE_URL}/influencers" style="background: #7c3aed; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin-top: 8px;">
                   Browse Influencers
@@ -117,15 +113,14 @@ export async function PATCH(
         }
 
         if (status === "COMPLETED" && influencerEmail) {
-          await resend.emails.send({
-            from: "InfluMarket <noreply@influmarket.in>",
+          await sendEmail({
             to: influencerEmail,
             subject: `🎉 Deal completed: ${deal.title}`,
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #7c3aed;">Deal Completed!</h2>
-                <p>Hi ${influencerName},</p>
-                <p><strong>${companyName}</strong> has marked the collaboration <strong>"${deal.title}"</strong> as completed.</p>
+                <p>Hi ${esc(influencerName)},</p>
+                <p><strong>${esc(companyName)}</strong> has marked the collaboration <strong>"${esc(deal.title)}"</strong> as completed.</p>
                 <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
                   <p><strong>Deal Value:</strong> ₹${deal.dealValue.toLocaleString()}</p>
                 </div>

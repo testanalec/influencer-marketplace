@@ -24,16 +24,14 @@ export async function GET(request: NextRequest) {
     const name = searchParams.get("name");
     const country = searchParams.get("country");
     const city = searchParams.get("city");
-    const includeAll = searchParams.get("includeAll") === "true";
     const rawLimit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 50;
     const limit = Math.min(rawLimit, 200); // cap at 200
     const offset = searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0;
 
     const where: any = {};
 
-    if (!includeAll) {
-      where.status = "APPROVED";
-    }
+    // Public list: approved creators only. Admin uses /api/admin/influencers.
+    where.status = "APPROVED";
 
     if (niche && niche !== "") {
       // Case-insensitive niche match
@@ -100,11 +98,9 @@ export async function GET(request: NextRequest) {
         facebookFollowers: true,
         ratePerPost: true,
         currency: true,
-        phone: true,
-        contactEmail: true,
         createdAt: true,
         updatedAt: true,
-        user: { select: { id: true, email: true, role: true, createdAt: true } },
+        user: { select: { id: true, role: true, createdAt: true } },
       },
       orderBy: { createdAt: "desc" },
       take: limit,

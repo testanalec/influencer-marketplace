@@ -16,6 +16,9 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (user.role !== "PENDING_ONBOARDING") {
+    return NextResponse.json({ error: "Account is already set up" }, { status: 400 });
+  }
 
   if (role === "INFLUENCER") {
     await prisma.user.update({
@@ -43,6 +46,7 @@ export async function POST(request: Request) {
             companyName: session.user.name || session.user.email,
             industry: "Other",
             description: "Update your company description in your profile.",
+            budget: "Not specified",
             status: "APPROVED",
           },
         },

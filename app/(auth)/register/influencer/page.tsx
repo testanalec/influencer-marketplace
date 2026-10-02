@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 
 function InfluencerRegisterForm() {
@@ -93,7 +93,17 @@ function InfluencerRegisterForm() {
         setError(data.error || "Registration failed.");
         return;
       }
-      await update();
+      if (!isGoogle) {
+        // Log the new user in; previously they were sent to the dashboard while
+        // logged out and silently bounced to /login.
+        const login = await signIn("credentials", { email: formData.email, password: formData.password, redirect: false });
+        if (!login || login.error) {
+          router.push("/login?registered=1");
+          return;
+        }
+      } else {
+        await update();
+      }
       router.push("/dashboard/influencer");
     } catch {
       setError("Something went wrong.");

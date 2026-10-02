@@ -8,8 +8,9 @@ export async function GET(
   try {
     const influencer = await prisma.influencerProfile.findUnique({
       where: { id: params.id },
+      // Public endpoint: never return the user's password hash, email or phone.
       include: {
-        user: true,
+        user: { select: { id: true, role: true, createdAt: true } },
       },
     });
 
@@ -20,7 +21,12 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(influencer);
+    if (influencer.status !== "APPROVED") {
+      return NextResponse.json({ error: "Influencer not found" }, { status: 404 });
+    }
+
+    const { phone, contactEmail, ...publicProfile } = influencer;
+    return NextResponse.json(publicProfile);
   } catch (err) {
     console.error("Error fetching influencer:", err);
     return NextResponse.json(

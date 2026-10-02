@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail, BASE_URL } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,10 +33,9 @@ export async function POST(req: NextRequest) {
     });
 
     // Send email
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+    const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
 
-    await resend.emails.send({
-      from: "InfluMarket <noreply@influmarket.in>",
+    await sendEmail({
       to: email,
       subject: "Reset your InfluMarket password",
       html: `
