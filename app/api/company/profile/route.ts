@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest) {
       ...(website !== undefined && { website }),
       ...(description !== undefined && { description }),
       ...(phone !== undefined && { phone }),
-      ...(budget !== undefined && { budget: Number(budget) }),
+      ...(budget !== undefined && { budget: String(budget) }),
     },
   });
 
