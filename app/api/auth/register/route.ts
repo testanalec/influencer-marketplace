@@ -28,13 +28,19 @@ export async function POST(request: Request) {
       bio, niche, instagram, youtube, tiktok,
       instagramFollowers, youtubeFollowers, tiktokFollowers,
       ratePerPost, industry, description, website, budget,
-      googleSignIn,
+      googleSignIn, avatar,
     } = body;
     let email: string = String(body.email || "").trim();
 
     if (!["INFLUENCER", "COMPANY"].includes(role)) {
       return NextResponse.json({ error: "Invalid role." }, { status: 400 });
     }
+
+    // Profile photo arrives already shrunk by the browser as a data URL.
+    const photo =
+      typeof avatar === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(avatar) && avatar.length < 1_500_000
+        ? avatar
+        : undefined;
 
     const influencerData = () => ({
       name: name || email,
@@ -48,6 +54,7 @@ export async function POST(request: Request) {
       youtubeFollowers: toInt(youtubeFollowers),
       tiktokFollowers: toInt(tiktokFollowers),
       ratePerPost: toFloat(ratePerPost),
+      ...(photo ? { avatar: photo } : {}),
       status: "PENDING",
     });
 
